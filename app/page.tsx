@@ -45,7 +45,7 @@ export default function Home() {
             text="Personal Barista for Your Crypto Journey"
           />
           {/* <p className="text-base md:text-lg text-white">
-            🚀 Brewit Wallet powered by Safe: 
+            🚀 Brewit Wallet powered by Safe
           </p> */}
         </div>
       </div>
