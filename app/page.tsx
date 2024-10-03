@@ -45,8 +45,7 @@ export default function Home() {
             text="Personal Barista for Your Crypto Journey"
           />
           {/* <p className="text-base md:text-lg text-white">
-            🚀 ZeroWallet powered by LayerZero: Simplified gas experience ⛽,
-            seamless dApp access across all chains 🌐, no bridging needed.
+            🚀 Brewit Wallet powered by Safe: 
           </p> */}
         </div>
       </div>
