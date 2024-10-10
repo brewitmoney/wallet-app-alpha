@@ -47,7 +47,7 @@ export default function Topbar() {
             <div className="flex flex-row justify-between items-center w-full p-0">
               <Image
                 src={"/logo/logo-without-tagline.svg"}
-                alt="ZeroWallet Logo"
+                alt="Brewit Wallet Logo"
                 width={120}
                 height={110}
               />

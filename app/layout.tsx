@@ -43,7 +43,6 @@ export const metadata: Metadata = {
     title: "Brewit Wallet - Personal Barista for Your Crypto Journey",
     description:
       "Brewit Wallet - Personal Barista for Your Crypto Journey",
-    creator: "@ZeroWallet",
     images: ["https://wallet.usezero.xyz/og/home.png"],
   },
   robots: {

@@ -56,29 +56,29 @@ export default function Settings() {
 
   const FaqsData = [
     {
-      question: "What is ZeroWallet?",
+      question: "What is Brewit Wallet?",
       answer:
-        "ZeroWallet is a next-generation, omnichain wallet powered by LayerZero, enabling users to manage their crypto portfolios and interact with decentralized applications (dApps) across multiple blockchain networks. With smart features and gas-efficient cross-chain transactions, ZeroWallet offers a seamless user experience.",
+        "Brewit Wallet is a next-generation, omnichain wallet powered by LayerZero, enabling users to manage their crypto portfolios and interact with decentralized applications (dApps) across multiple blockchain networks. With smart features and gas-efficient cross-chain transactions, Brewit Wallet offers a seamless user experience.",
     },
     {
-      question: "What chains does ZeroWallet support?",
+      question: "What chains does Brewit support?",
       answer:
-        "ZeroWallet is designed to work across multiple chains, including Ethereum, Polygon, Binance Smart Chain, Arbitrum, Optimism, and more. It supports an omnichain environment, allowing seamless interaction with dApps on various networks.",
+        "Brewit Wallet is designed to work across multiple chains, including Ethereum, Polygon, Binance Smart Chain, Arbitrum, Optimism, and more. It supports an omnichain environment, allowing seamless interaction with dApps on various networks.",
     },
     {
-      question: "How does ZeroWallet handle gas fees?",
+      question: "How does Brewit Wallet handle gas fees?",
       answer:
-        "ZeroWallet uses LayerZero’s technology to enable users to interact with any chain without needing to hold gas tokens for each specific network. You can pay transaction fees using the native tokens of the chains, eliminating the complexity of managing multiple gas tokens.",
+        "Brewit Wallet uses LayerZero’s technology to enable users to interact with any chain without needing to hold gas tokens for each specific network. You can pay transaction fees using the native tokens of the chains, eliminating the complexity of managing multiple gas tokens.",
     },
     {
-      question: "Does ZeroWallet support NFTs?",
+      question: "Does Brewit Wallet support NFTs?",
       answer:
-        "Yes, ZeroWallet supports NFTs (Non-Fungible Tokens) across multiple chains. You can manage, trade, and interact with NFT collections directly from your wallet.",
+        "Yes, Brewit Wallet supports NFTs (Non-Fungible Tokens) across multiple chains. You can manage, trade, and interact with NFT collections directly from your wallet.",
     },
     {
-      question: "Is ZeroWallet secure?",
+      question: "Is Brewit Wallet secure?",
       answer:
-        "Yes, ZeroWallet prioritizes security, utilizing advanced cryptographic techniques and LayerZero’s secure messaging to ensure safe transactions across chains. Your private keys and assets are always under your control.",
+        "Yes, Brewit Wallet prioritizes security, utilizing advanced cryptographic techniques and LayerZero’s secure messaging to ensure safe transactions across chains. Your private keys and assets are always under your control.",
     },
   ];
   return (
