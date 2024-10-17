@@ -6,12 +6,16 @@ export default function NotFound() {
     <div className="flex flex-col items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col items-center justify-center w-full max-w-md gap-8">
         <div className="flex flex-col items-center justify-center gap-1">
-          <h1 className="text-9xl font-black">404</h1>
-          <h2 className="text-3xl font-bold">Page Not Found</h2>
+          <h1 className="font-black text-8xl md:text-9xl tracking-tight !leading-[1.1] bg-clip-text title-gradient text-transparent">
+            404
+          </h1>
+          <h2 className="font-black text-4xl md:text-2xl tracking-tight !leading-[1.1] bg-clip-text title-gradient text-transparent">
+            Page Not Found
+          </h2>
         </div>
         <Link
           href={"/"}
-          className=" bg-white text-black text-lg px-6 py-2.5 flex flex-row justify-center items-center gap-2"
+          className=" bg-white text-black text-lg px-6 py-2.5 flex flex-row justify-center items-center gap-2 button-gradient"
         >
           <Home />
           <span>Home</span>

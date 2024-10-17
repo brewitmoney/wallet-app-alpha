@@ -22,6 +22,9 @@ import { MenuIcon } from "lucide-react";
 import Links from "../../data/Links.json";
 import Icons from "@/app/utils/Icons";
 import { FadeText } from "@/components/magicui/fade-text";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { gasChainsTokens } from "@/app/utils/tokens";
+import useAccountStore from "@/app/store/account/account.store";
 
 export default function Topbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -32,6 +35,7 @@ export default function Topbar() {
   const { disconnect } = useDisconnect();
   const { walletInfo } = useWalletInfo();
   const { setWalletInfo } = useLoginProvider();
+  const { chainId, setChainId } = useAccountStore();
   const [formatedPathname, setFormatedPathname] = useState("");
 
   useEffect(() => {
@@ -44,12 +48,12 @@ export default function Topbar() {
       <div className="flex w-full md:hidden">
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
-            <div className="flex flex-row justify-between items-center w-full p-0">
+            <div className="flex flex-row justify-between items-center w-full pt-2">
               <Image
-                src={"/logo/logo-without-tagline.svg"}
+                src={"/logo/icon.svg"}
                 alt="ZeroWallet Logo"
-                width={120}
-                height={110}
+                width={50}
+                height={50}
               />
               <button className="flex items-center justify-center rounded-md bg-background text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none">
                 <span className="sr-only">Open main menu</span>
@@ -69,7 +73,7 @@ export default function Topbar() {
                 <div
                   key={link.name}
                   className={`flex flex-row gap-4 items-center justify-start pr-4 py-4 bg-black text-white ${
-                    pathname === link.href ? "font-bold" : "font-light"
+                    pathname === link.href ? "font-bold" : "font-normal"
                   }`}
                   onClick={() => {
                     setDrawerOpen(false);
@@ -82,7 +86,7 @@ export default function Topbar() {
               ))}
               <div
                 className={`flex flex-row gap-4 items-center justify-start pr-4 py-4 bg-black text-white ${
-                  pathname === "/app/settings" ? "font-bold" : "font-light"
+                  pathname === "/app/settings" ? "font-bold" : "font-normal"
                 }`}
                 onClick={() => {
                   setDrawerOpen(false);
@@ -117,6 +121,32 @@ export default function Topbar() {
         />
 
         <div className="flex flex-row justify-end items-center gap-4 w-full">
+        <Select
+                      value={chainId.toString()}
+                      onValueChange={(e) => {
+                        setChainId(parseInt(e));
+                      }}
+                    >
+                      <SelectTrigger className=" w-28 bg-white px-2 py-2 border border-accent text-black flex flex-row gap-2 items-center justify-center text-sm rounded-full focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent">
+                        <SelectValue placeholder="From Chain" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gasChainsTokens.map((from, f) => (
+                          <SelectItem key={f} value={from.chainId.toString()}>
+                            <div className="flex flex-row justify-center items-center gap-2">
+                              <Image
+                                className="bg-white rounded-full"
+                                src={from.icon}
+                                alt={from.name}
+                                width={25}
+                                height={25}
+                              />
+                              <h3 className="truncate">{from.name}</h3>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
           <WalletButton
             walletInfo={walletInfo}
             address={address}

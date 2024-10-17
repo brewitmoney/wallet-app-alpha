@@ -3,6 +3,9 @@ import { KERNEL_V3_1 } from "@zerodev/sdk/constants"
 import { ENTRYPOINT_ADDRESS_V07 } from "permissionless";
 import { createPublicClient, http } from "viem";
 import { getChain } from "./permissionless";
+import { getChainId } from "viem/actions";
+import { publicClient } from "./utils";
+
 
 
 export async function connectValidator(chainId: string, webAuthnKey: any) {
@@ -11,16 +14,17 @@ export async function connectValidator(chainId: string, webAuthnKey: any) {
   const chain = getChain(chainId);
   
   
-  const pimlicoEndpoint = `https://api.pimlico.io/v2/${chain.name.toLowerCase().replace(/\s+/g, '-')}/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`;
+  // const pimlicoEndpoint = `https://api.pimlico.io/v2/polygon/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`;
+  const pimlicoEndpoint  = 'http://0.0.0.0:8545'
   
   
-  
-  const publicClient = createPublicClient({
-    transport: http(pimlicoEndpoint)
-  })
+  // const client = createPublicClient({
+  //   transport: http(publicClient(parseInt(chainId)))
+  // })
 
+  // console.log(await getChainId(publicClient))
 
-    return  await toPasskeyValidator(publicClient, {
+    return  await toPasskeyValidator(publicClient(parseInt(chainId)), {
       webAuthnKey,
       entryPoint: ENTRYPOINT_ADDRESS_V07,
       kernelVersion: KERNEL_V3_1,

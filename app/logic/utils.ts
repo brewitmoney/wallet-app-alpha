@@ -2,6 +2,7 @@ import { PublicClient, createPublicClient, http } from "viem";
 import { PimlicoPaymasterClient, createPimlicoPaymasterClient } from "permissionless/clients/pimlico";
 import { NetworkUtil } from "./networks";
 import { ethers, formatUnits, zeroPadBytes, zeroPadValue } from "ethers";
+import { createHash } from "crypto";
 
 
   // ERC-20 token ABI (replace with the actual ABI)
@@ -240,4 +241,14 @@ export function convertToSeconds(value: number, unit: 'seconds' | 'minutes' | 'h
 export function fixDecimal(number: string, decimals: number) {
 
     return parseFloat(number).toFixed(decimals).replace(/\.?0+$/, '');;
+  }
+
+  export function createJobId(startTime: Date, endTime: Date, interval: number, account: string, chainId: string): string {
+    const startTimeStr = startTime.toISOString();
+    const endTimeStr = endTime.toISOString();
+    const intervalStr = interval.toString();
+    
+    let inputString = `${startTimeStr}|${endTimeStr}|${intervalStr}|${account}|${chainId}`;
+    const hash = createHash('sha256').update(inputString).digest('hex');
+    return `j_${hash.slice(0, 16)}`;
   }

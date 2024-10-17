@@ -17,7 +17,7 @@ export enum Network {
 export const networks = {
   localhost: {
     name: 'Local Chain',
-    chainId: 31337,
+    chainId: 313370,
     type: 'Testnet',
     url: "http://localhost:8545",
     safeService: "",
@@ -60,7 +60,7 @@ export const networks = {
     name: 'Base',
     type: 'mainnet',
     chainId: 8453,
-    url: `https://base-mainnet.g.alchemy.com/v2/NTGkSXMuKkoHwQ_W4eNpGlihUScplXYV`,
+    url: `https://base-mainnet.g.alchemy.com/v2/Zs890Y4JuSC19mPxz5HAoOCuRegcBoDH`,
     blockExplorer: "https://basescan.org",
     safeService: "https://safe-transaction-base.safe.global",
     api: `https://api-goerli.etherscan.io/api?apikey=${ETHERSCAN_API_KEY}`,
@@ -106,6 +106,16 @@ export const networks = {
     api: "",
     easExplorer: "",
   },
+  polygonfork: {
+    name: 'Polygon',
+    type: 'mainnet',
+    chainId: 1370,
+    url: "https://node.zenguard.xyz/rpc/polygon",
+    safeService: "https://safe-transaction-polygon.safe.global",
+    blockExplorer: "https://polygonscan.com",
+    api: "",
+    easExplorer: "",
+  },
   arbitrum: {
     name: 'Arbitrum One',
     type: 'mainnet',
@@ -132,6 +142,7 @@ export const networks = {
 
 export class NetworkUtil {
   static getNetworkById(chainId: number) {
+    console.log(chainId)
     const network = Object.values(networks).find(
       (network) => chainId === network.chainId
     );

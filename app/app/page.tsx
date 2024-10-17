@@ -170,27 +170,27 @@ export default function App() {
       </div>
       <Tabs defaultValue="Tokens" className="w-full flex flex-col gap-4 h-full">
         <div className="flex flex-col-reverse md:flex-row md:justify-between items-end md:items-center gap-2">
-          <TabsList className="rounded-none h-fit p-0 divide-x divide-accent border border-accent grid grid-cols-3 md:max-w-md w-full gap-0 bg-black  text-white data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:font-bold">
+          <TabsList className="rounded-none h-fit p-0 divide-x divide-accent border border-accent grid grid-cols-3 md:max-w-md w-full gap-0 bg-black  text-white data-[state=active]:bg-gradient data-[state=active]:text-black data-[state=active]:font-bold">
             <TabsTrigger
-              className="py-3 text-sm rounded-none data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:font-bold"
+              className="py-3 text-sm rounded-none data-[state=active]:bg-secondary data-[state=active]:text-black data-[state=active]:font-bold"
               value="Tokens"
             >
               Tokens
             </TabsTrigger>
             <TabsTrigger
-              className="py-3 text-sm rounded-none data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:font-bold"
+              className="py-3 text-sm rounded-none data-[state=active]:bg-secondary data-[state=active]:text-black data-[state=active]:font-bold"
               value="Defi"
             >
               DeFi
             </TabsTrigger>
             <TabsTrigger
-              className="py-3 text-sm rounded-none data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:font-bold"
+              className="py-3 text-sm rounded-none data-[state=active]:bg-secondary data-[state=active]:text-black data-[state=active]:font-bold"
               value="NFTs"
             >
               NFTs
             </TabsTrigger>
             {/* <TabsTrigger
-              className="py-2.5 text-sm rounded-none data-[state=active]:bg-white data-[state=active]:text-black"
+              className="py-2.5 text-sm rounded-none data-[state=active]:bg-gradient data-[state=active]:text-black"
               value="Transactions"
             >
               Transactions

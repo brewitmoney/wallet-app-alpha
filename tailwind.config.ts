@@ -18,9 +18,9 @@ const config = {
     },
     extend: {
       colors: {
-        black: "#0A0A0A",
-        white: "#F2F2F2",
-        accent: "#757575",
+        primary: "#E10558",
+        secondary: "#FF8408",
+        accent: "#55555F",
       },
       keyframes: {
         "accordion-down": {
@@ -39,10 +39,22 @@ const config = {
             height: "0",
           },
         },
+        shine: {
+          "0%": {
+            "background-position": "0% 0%",
+          },
+          "50%": {
+            "background-position": "100% 100%",
+          },
+          to: {
+            "background-position": "0% 0%",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        shine: "shine var(--duration) infinite linear",
       },
     },
   },

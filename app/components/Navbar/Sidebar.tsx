@@ -22,15 +22,19 @@ export default function Sidebar() {
         !open ? "w-full" : "w-24"
       }`}
     >
-      <div className="border-b border-accent w-full bg-gradient flex flex-row justify-center items-center relative">
-        <Link className={!open ? "py-4 px-4 pt-5" : "p-4"} href={"/app"}>
+      <div className="border-b border-accent w-full flex flex-row justify-center items-center relative">
+        <Link
+          className="p-4 flex flex-row justify-center items-center gap-2"
+          href={"/app"}
+        >
           <Image
-            src={open ? "/logo/icon.svg" : "/logo/logo.svg"}
+            src={"/logo/icon.svg"}
             alt="Zero Logo"
-            width={open ? 50 : 150}
-            height={180}
+            height={50}
+            width={50}
             className="transition-all duration-300 ease-in-out"
           />
+          {!open && <span className="text-3xl font-bold">brewit</span>}
         </Link>
         <button
           onClick={() => setOpen(!open)}
@@ -54,7 +58,7 @@ export default function Sidebar() {
                 open ? "p-4" : "py-5 px-6"
               }  transition-all duration-300 ease-in-out ${
                 pathname === link.href
-                  ? " font-bold bg-white text-black "
+                  ? " font-bold bg-gradient text-black "
                   : "bg-transparent font-base text-accent"
               }`}
             >
@@ -100,7 +104,7 @@ export default function Sidebar() {
           className={`flex flex-row gap-4 items-center justify-center border-t border-accent w-full ${
             !open ? "py-5 px-6" : "p-4"
           } transition-all duration-300 ease-in-out ${
-            pathname === "/app/settings" && "bg-white"
+            pathname === "/app/settings" && "bg-gradient"
           }`}
         >
           {!open ? (
