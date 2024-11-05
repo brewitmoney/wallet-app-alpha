@@ -106,7 +106,7 @@ export default function Settings() {
 
   })();
 
-  }, [address]);
+  }, [address, chainId]);
   
 
   const FaqsData = [
@@ -273,9 +273,9 @@ export default function Settings() {
                           </div>
 
 
-                          { tokenDetails.filter((token: any) => token.spendlimit?.limit > 0).map( ( token: any ) => 
+                          { tokenDetails.filter((token: any) => token.spendlimit?.limit > 0).map( ( token: any, key: number ) => 
                           
-                          <div className="flex flex-row justify-between items-center w-full mt-5">
+                          <div className="flex flex-row justify-between items-center w-full mt-5" key={key}>
                         <div className="flex flex-row justify-start items-center gap-2">
 
                             <Image
