@@ -19,13 +19,12 @@ import {
   useAccount,
   useLoginProvider,
 } from "../../context/LoginProvider";
-import { buildUseSmartSession, getSpendPolicy, sendTransaction, Transaction } from "@/app/logic/module";
+import { sendTransaction, Transaction } from "@/app/logic/module";
 import { getJsonRpcProvider } from "@/app/logic/web3";
 import { ZeroAddress, formatEther, parseEther, parseUnits } from "ethers";
 import {
   buildTransferToken,
   fixDecimal,
-  getSpendableTokenInfo,
   getTokenBalance,
   getTokenDecimals,
 } from "@/app/logic/utils";
@@ -34,7 +33,6 @@ import Truncate from "@/app/utils/truncate";
 import LoadingIndicator from "@/components/ui/loader";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadAccountInfo } from "@/app/utils/storage";
-import { computeConfigId, getActionId, getPermissionId } from "@/app/logic/smartsessions/smartsessions";
 
 interface GasChainType {
   name: string;
