@@ -1,5 +1,10 @@
 "use client";
-import { findChainIndexByChainId, gasChainsTokens } from "@/app/utils/tokens";
+import {
+  findChainIndexByChainId,
+  gasChainsTokens,
+  getChainById,
+  getTokenInfo,
+} from "@/app/utils/tokens";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -11,8 +16,8 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "@/components/ui/use-toast";
 import Image from "next/image";
-import { CopyIcon, Plus } from "lucide-react";
-import { useAccount } from "wagmi";
+import { BadgeDollarSign, CopyIcon, Plus } from "lucide-react";
+import { useAccount, useLoginProvider } from "../../context/LoginProvider";
 import Truncate from "@/app/utils/truncate";
 import { CopytoClipboard } from "@/app/utils/copyclipboard";
 import {
@@ -21,9 +26,40 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { loadAccountInfo, storeAccountInfo } from "@/app/utils/storage";
+import {
+  Dialog,
+  DialogDescription,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import LoadingIndicator from "@/components/ui/loader";
+import { fixDecimal, getSpendableTokenInfo } from "@/app/logic/utils";
+import { ZeroAddress } from "ethers";
+import useAccountStore from "@/app/store/account/account.store";
+import { buildEnableSmartSession, buildInstallModule, buildSmartSessionModule, sendTransaction, smartSession } from "@/app/logic/module";
+import { getJsonRpcProvider } from "@/app/logic/web3";
+
+const availableAccounts = [
+  { name: "Main Account", icon: "/icons/admin.svg" },
+  { name: "Spend Account", icon: "/icons/send.svg" },
+  { name: "Investment Account", icon: "/icons/investment.svg" },
+];
 
 export default function Settings() {
+  
+  const accountInfo = loadAccountInfo();
+  const { validator } = useLoginProvider();
+  const { chainId, setChainId } = useAccountStore();
   const [gasChain, setGasChain] = useState<number>(0);
+  const [ spendToken, setSpendToken ] = useState<number>(1);
+  const [ spendAmount, setSpendAmount ] = useState<string>("0");
+  const [tokenDetails, setTokenDetails]: any = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState<number>(
+    accountInfo.selected
+  );
   const { address, isConnecting, isDisconnected } = useAccount();
 
   function saveGasChain() {
@@ -45,14 +81,33 @@ export default function Settings() {
   }
 
   useEffect(() => {
-    const data = localStorage.getItem("gasChain");
-    if (data) {
-      const _data = JSON.parse(data);
-      const arrayID = findChainIndexByChainId(_data.chainId);
 
-      setGasChain(arrayID);
-    }
-  }, []);
+  (async () => {  
+    let tokens = getChainById(Number(chainId))?.tokens;
+    let updatedTokens = [];
+
+
+    if(address) {
+
+    updatedTokens = await Promise.all(
+      tokens!.map(async (token) => {
+        const spendlimit =
+          token.address == ZeroAddress ?
+            {} : (await getSpendableTokenInfo(chainId.toString(), token.address!, address));
+
+        return {
+          ...token,
+          spendlimit, // Add the balance to each token
+        };
+      })
+    );
+    setTokenDetails(updatedTokens)
+  }
+
+  })();
+
+  }, [address]);
+  
 
   const FaqsData = [
     {
@@ -90,7 +145,7 @@ export default function Settings() {
               className="py-3 w-full text-lg rounded-none data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:font-bold"
               value="account"
             >
-              Wallets
+              Accounts
             </TabsTrigger>
             <TabsTrigger
               className="py-3 w-full text-lg rounded-none data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:font-bold"
@@ -109,15 +164,187 @@ export default function Settings() {
             <TabsContent className="mt-0" value="account">
               <div className="flex flex-col justify-between items-center gap-0 w-full">
                 <div className="flex flex-row justify-between items-center w-full border-b border-accent px-4 py-3">
-                  <h2 className="text-xl font-bold">Connected Wallets</h2>
-                  <button className="bg-white text-black px-4 text-sm py-2 flex flex-row items-center gap-2">
-                    <Plus size={18} />{" "}
-                    <span className="md:block hidden">Add Wallet</span>
-                  </button>
+                  <h2 className="text-xl font-bold">Available Accounts</h2>
+
+                  <Dialog>
+                    <DialogTrigger
+                      onClick={() => {}}
+                      className="border border-accent px-6 py-2.5 bg-black text-white text-sm hover:border-white hover:text-white"
+                    >
+                      Manage Account
+                    </DialogTrigger>
+                    <DialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-black text-white dark:bg-white flex flex-col justify-start items-start gap-4 rounded-none sm:rounded-none max-w-lg w-[90vw] border border-accent">
+                      <DialogHeader>
+                        <DialogTitle>Withdraw Funds</DialogTitle>
+                        <DialogDescription>
+                          Withdraw your funds from the vault to your wallet on
+                          desired chain.
+                        </DialogDescription>
+                        <div className="flex flex-col gap-0 justify-start items-start pt-4">
+                          <DialogDescription className="font-semibold text-center w-full text-white">
+                            You are about to withdraw interest bearing token
+                            from the vault to your account
+                          </DialogDescription>
+
+                          <div className="flex flex-col border border-accent  divide-y divide-accent gap-px">
+                              <div className="grid grid-cols-1 md:grid-cols-2 w-full divide-y md:divide-x divide-accent">
+                                <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
+                                  <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
+                                    <div className="text-accent">Spend Limit</div>
+                                    <BadgeDollarSign size={14} />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-2 w-full">
+                                    <div className="flex flex-col">
+                                      <input
+                                        type="text"
+                                        value={tokenDetails[spendToken]?.spendlimit?.limit}
+                                        className="bg-transparent focus:outline-none w-full text-white text-4xl"
+                                        onChange={async (e) => {
+                                          const updatedTokenDetails = [...tokenDetails];
+                                          // Update the limit for the specific token
+                                          updatedTokenDetails[spendToken].spendlimit.limit = e.target.value;                                    
+                                          console.log(updatedTokenDetails);
+                                          // Set the updated token details
+                                          setTokenDetails(updatedTokenDetails);
+                                        }}
+                                      />
+                                    </div>
+
+                                    <div className="flex flex-row justify-end items-center gap-2">
+                                      <Select
+                                        value={spendToken.toString()}
+                                        onValueChange={async (e) => {
+                                          setSpendToken(parseInt(e));
+                                        }}
+                                      >
+                                        <SelectTrigger className=" w-24 bg-white px-2 py-2 border border-accent text-black flex flex-row gap-2 items-center justify-center text-sm rounded-full focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent">
+                                          <SelectValue placeholder="From Token" />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                          {tokenDetails.map(
+                                            (token: any, f: number ) =>
+                                              token.address != ZeroAddress && (
+                                                <SelectItem
+                                                  key={f}
+                                                  value={f.toString()}
+                                                >
+                                                  <div className="flex flex-row justify-center items-center gap-2">
+                                                    <Image
+                                                      className="bg-white rounded-full"
+                                                      src={token.icon}
+                                                      alt={token.name}
+                                                      width={25}
+                                                      height={25}
+                                                    />
+                                                    <h3 className="truncate uppercase">
+                                                      {token.name}
+                                                    </h3>
+                                                  </div>
+                                                </SelectItem>
+                                              )
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                  
+                                    </div>
+                                </div>
+                              </div>
+                              <>
+                              <button
+                            className="bg-white border border-accent hover:bg-transparent hover:text-white text-black text-lg m-8 py-2.5 "
+                            onClick={async () => {
+
+
+                                  }}
+                                >
+                                Update Limit
+                              </button>
+                              </>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-row justify-between items-center w-full mt-5">
+                            <h4 className="font-semibold">                             
+                              
+                              Current Spend Limits
+                            </h4>
+                          </div>
+
+
+                          { tokenDetails.filter((token: any) => token.spendlimit?.limit > 0).map( ( token: any ) => 
+                          
+                          <div className="flex flex-row justify-between items-center w-full mt-5">
+                        <div className="flex flex-row justify-start items-center gap-2">
+
+                            <Image
+                                      src={
+                                        token.icon!
+                                      }
+                                      alt="From Token"
+                                      width={30}
+                                      height={30}
+                                    />
+                            <h4 className="font-semibold">                             
+                              
+                            { token.fullname! }
+                            </h4>
+                            </div>
+                            <div className="flex flex-row justify-start items-center gap-2">
+                                 
+                                    <div className="font-semibold text-green-500">
+                                      
+                                      { `${token.spendlimit?.limit}` }
+                                    </div>
+                                    <div className="text-red-500">
+                                      
+                                      { `(Spent: ${token.spendlimit?.spent})` }
+                                    </div>
+                                  
+                                  <div className="font-semibold">
+                                      {
+                                  token.name!
+                                      }
+                                    </div>
+                                </div> 
+                          </div>
+                        )}
+                          <button
+                            className="bg-white border border-accent hover:bg-transparent hover:text-white text-black w-full px-6 py-3 text-lg mt-8"
+                            onClick={async () => {
+                              try {
+
+
+                                const enableTransactions = await buildSmartSessionModule(chainId.toString(), address)
+
+                                const SpendLimits = tokenDetails
+                                .filter((token: any) => token.spendlimit?.limit > 0)
+                                .map( (token: any) => ({
+                                  amount: token.spendlimit.limit,
+                                  token: token.address,
+                                }));
+                      
+
+                                enableTransactions.push(await buildEnableSmartSession(chainId.toString(), SpendLimits ))
+                                await sendTransaction(chainId.toString(), enableTransactions, validator, address) 
+
+                              } catch (e) {
+                                console.log("Failed to withdraw", e);
+                              }
+                            }}
+                          >
+                            Update Account
+                          </button>
+                        </div>
+                      </DialogHeader>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-                <div className="flex flex-col w-full  px-4 py-3">
+
+                <div className="flex flex-col w-full  px-4 py-4">
                   <div className="flex flex-row justify-between items-start">
-                    <h3>EOA</h3>
+                    <h3>Safe Account Address</h3>
                     <div className="flex flex-row justify-center items-center gap-2">
                       <h4>{Truncate(address, 24, "...")}</h4>
                       <button
@@ -134,6 +361,46 @@ export default function Settings() {
                       >
                         <CopyIcon size={16} />
                       </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col w-full  px-4 py-4">
+                  <div className="flex flex-row justify-between items-start">
+                    <h3>Selected Account</h3>
+
+                    <div className="flex flex-row justify-center items-center gap-2">
+                      <Select
+                        defaultValue={selectedAccount.toString()}
+                        value={selectedAccount.toString()}
+                        onValueChange={(e) => {
+                          setSelectedAccount(parseInt(e));
+                          accountInfo.selected = parseInt(e);
+                          storeAccountInfo(accountInfo);
+                        }}
+                      >
+                        <SelectTrigger className="w-full text-black h-full py-2.5 focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent border border-accent">
+                          <SelectValue placeholder="Select chain" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableAccounts.map((account, c) => {
+                            return (
+                              <SelectItem value={c.toString()} key={c}>
+                                <div className="flex flex-row justify-start px-0 items-center gap-2">
+                                  <Image
+                                    src={account.icon}
+                                    alt={account.name}
+                                    width="20"
+                                    style={{ color: "orange" }}
+                                    height="20"
+                                  />
+                                  <h4>{account.name}</h4>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>

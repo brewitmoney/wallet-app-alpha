@@ -1,8 +1,12 @@
-import { PublicClient, createPublicClient, http } from "viem";
+import { Hex, PublicClient, createPublicClient, http, toFunctionSelector } from "viem";
 import { PimlicoPaymasterClient, createPimlicoPaymasterClient } from "permissionless/clients/pimlico";
 import { NetworkUtil } from "./networks";
 import { ethers, formatUnits, zeroPadBytes, zeroPadValue } from "ethers";
 import { createHash } from "crypto";
+import { buildUseSmartSession, getSpendPolicy } from "./module";
+import { privateKeyToAccount } from "viem/accounts";
+import { getJsonRpcProvider } from "./web3";
+import { computeConfigId, getActionId } from "./smartsessions/smartsessions";
 
 
   // ERC-20 token ABI (replace with the actual ABI)
@@ -94,6 +98,39 @@ export async function getTokenBalance(tokenAddress: string, account: string, pro
 
   return formatUnits(balance, decimals);
 }
+
+export async function getSpendableTokenInfo(chainId: string, tokenAddress: Hex, account: Hex, ) {
+  
+  // Ethereum provider (you can use Infura or any other provider)
+  const provider = await getJsonRpcProvider(chainId);
+
+  // Connect to the ERC-20 token contract
+  const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+
+  // Get the balance using the balanceOf function
+  const balance = await tokenContract.balanceOf(account);
+  const decimals = await tokenContract.decimals()
+
+  const execCallSelector = toFunctionSelector({
+    name: 'transfer',
+    type: 'function',
+    inputs: [{ name: 'to', type: 'address' }, { name: 'value', type: 'uint256' }],
+    outputs: [],
+    stateMutability: 'view',
+  })
+  const actionId = await getActionId({ target: tokenAddress, selector: execCallSelector})
+  
+  const sessionPk = "0xdd1db445a79e51f16d08c4e5dc5810c4b5f29882b8610058cfecd425ac293712"
+  const sessionOwner = privateKeyToAccount(sessionPk)
+  
+  const smartSession = await buildUseSmartSession(chainId, sessionOwner)
+  const spendPolicy = await getSpendPolicy(chainId, computeConfigId(
+    smartSession.permissionId, actionId, account), account, tokenAddress)
+
+  return { limit:  formatUnits(spendPolicy.spendingLimit, decimals), spent:  formatUnits(spendPolicy.alreadySpent, decimals), balance: formatUnits(spendPolicy.spendingLimit - spendPolicy.alreadySpent, decimals) };
+}
+
+
 
 
 export async function getVaultBalance(vaultAddress: string, account: string, provider: any) {

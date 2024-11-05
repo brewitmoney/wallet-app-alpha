@@ -1,17 +1,18 @@
 import { WebAuthnKey  } from "@zerodev/webauthn-key";
 
 
-export const storeAccountInfo = (account: string, address: string, privateKey: string) => {
+export const storeAccountInfo = (accountInfo: Object) => {
 
-    localStorage.setItem('account', JSON.stringify({account, address, privateKey}));
+    localStorage.setItem('subaccounts', JSON.stringify(accountInfo));
 }
 
 
 export const loadAccountInfo = (): any => {
 
-    const accountInfo = localStorage.getItem('account');
+    const accountInfo = localStorage.getItem('subaccounts');
     return accountInfo ? JSON.parse(accountInfo) : {};
 }
+
 
 export const storePasskey = (passkey: WebAuthnKey) => {
     
