@@ -26,27 +26,27 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import Image from "next/image";
-
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatNumberCommas } from "../utils/commas";
-import PieChartComponent from "../components/PieChart/PieChart";
 import { ZapperContext } from "../context/ZapperProvider";
-import {
-  getIconbySymbol,
-  getNetworkLogobyName,
-  Networks,
-} from "../utils/Zapper";
-import { set } from "date-fns";
-import NumberTicker from "@/components/magicui/number-ticker";
+import { Networks } from "../utils/Zapper";
 import useAccountStore from "../store/account/account.store";
 import { getJsonRpcProvider } from "../logic/web3";
 import { gasChainsTokens, getChainById } from "../utils/tokens";
 import { fixDecimal, getTokenBalance, getVaultBalance } from "../logic/utils";
 import { formatEther, ZeroAddress } from "ethers";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 export default function App() {
-  const { chainId, setChainId } = useAccountStore();
+  const { chainId } = useAccountStore();
   const router = useRouter();
   const [tokenDetails, setTokenDetails]: any = useState([]);
   const [tokenVaultDetails, setTokenVaultDetails]: any = useState([]);
@@ -55,23 +55,18 @@ export default function App() {
   const [openShowQR, setOpenShowQR] = useState(false);
   const { address } = useAccount();
   const { ensname, ensavatar } = useContext(LoginContext);
-
+  const [openClaim, setOpenClaim] = useState(false);
   //Zapper Data
 
   const {
     NFTData,
-    DefiData,
     isZapperLoading,
-    DefiTotal,
-    totalBalance,
     selectedNetworks,
     setSelectedNetworks,
-    tokensByNetwork,
     refresh,
     setRefresh,
     tokenDataError,
     DeFiDataError,
-    NftDataError,
     setIsZapperLoading,
   } = useContext(ZapperContext);
 
@@ -87,47 +82,45 @@ export default function App() {
 
       let updatedTokens = [];
 
-
-      if(address) {
-
-      updatedTokens = await Promise.all(
-        tokens!.map(async (token) => {
-          const balance =
-            token.address == ZeroAddress
-              ? formatEther(await provider.getBalance(address))
-              : await getTokenBalance(token.address!, address, provider);
-
-          return {
-            ...token,
-            balance, // Add the balance to each token
-          };
-        })
-      );
-
-      setTokenDetails(updatedTokens);
-
-      let tokensWithVault = updatedTokens?.filter(
-        (token: any) => token.vault != undefined
-      );
-
-      if (tokensWithVault) {
+      if (address) {
         updatedTokens = await Promise.all(
-          tokensWithVault.map(async (token) => {
-            const vaultBalance = await getVaultBalance(
-              token.vault!,
-              address,
-              provider
-            );
+          tokens!.map(async (token) => {
+            const balance =
+              token.address == ZeroAddress
+                ? formatEther(await provider.getBalance(address))
+                : await getTokenBalance(token.address!, address, provider);
+
             return {
               ...token,
-              vaultBalance, // Add the vault balance to each token
+              balance, // Add the balance to each token
             };
           })
         );
-        console.log(updatedTokens);
-        setTokenVaultDetails(updatedTokens); // Tokens now contain their respective vault balances
+
+        setTokenDetails(updatedTokens);
+
+        let tokensWithVault = updatedTokens?.filter(
+          (token: any) => token.vault != undefined
+        );
+
+        if (tokensWithVault) {
+          updatedTokens = await Promise.all(
+            tokensWithVault.map(async (token) => {
+              const vaultBalance = await getVaultBalance(
+                token.vault!,
+                address,
+                provider
+              );
+              return {
+                ...token,
+                vaultBalance, // Add the vault balance to each token
+              };
+            })
+          );
+          console.log(updatedTokens);
+          setTokenVaultDetails(updatedTokens); // Tokens now contain their respective vault balances
+        }
       }
-    }
     })();
   }, [chainId, address]);
 
@@ -144,11 +137,20 @@ export default function App() {
       return newSelectedNetworks;
     });
   }
+
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
+
+  const handleCelebrate = () => {
+    setOpenClaim(false);
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 20000); // Stop after 5 seconds
+  };
   return (
     <div className=" flex flex-col items-start justify-center gap-6 w-full h-full">
       <div className="w-full border border-accent flex flex-col gap-6 px-4 py-4 md:py-6">
         <div className="w-full flex flex-col md:flex-row gap-4 justify-between items-center relative">
-          <div className="flex flex-col md:flex-row gap-4 justify-start items-start md:items-center w-full">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center w-full">
             {ensavatar ? (
               <img
                 className="rounded-full"
@@ -169,10 +171,11 @@ export default function App() {
               <div className="flex flex-col-reverse justify-start items-start gap-1">
                 <div className="flex flex-row justify-center items-start gap-2">
                   <h1 className="text-4xl font-black text-white">
-                    
-                   
-                  { tokenDetails[0] ? `${fixDecimal(tokenDetails[0]?.balance, 2)} ${tokenDetails[0]?.name}` : null }
-                    
+                    {tokenDetails[0]
+                      ? `${fixDecimal(tokenDetails[0]?.balance, 2)} ${
+                          tokenDetails[0]?.name
+                        }`
+                      : null}
                   </h1>
                   <button
                     className="mt-1"
@@ -222,9 +225,41 @@ export default function App() {
                 </div>
               </div>
             </div>
+            <button
+              onClick={() => setOpenClaim(true)}
+              className="flex flex-row justify-center items-center gap-2 bg-gradient text-black px-6 py-2 font-bold rounded-full"
+            >
+              Claim Badge
+            </button>
+            <Dialog open={openClaim} onOpenChange={setOpenClaim}>
+              <DialogContent className="bg-black text-white dark:bg-white flex flex-col justify-start items-start gap-4 rounded-none sm:rounded-none max-w-lg mx-auto border border-accent">
+                <DialogHeader>
+                  <DialogTitle>Early Adoptor Badge</DialogTitle>
+                  <DialogDescription>
+                    You are eligible for an early adopter badge. Will
+                    distinguish you from others.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col justify-center items-center w-full gap-4">
+                  <Image
+                    src={"/badges/Brewit - Early Adaptor.png"}
+                    width={400}
+                    height={400}
+                    alt="Brewit - Early Adaptor"
+                  />
+                  <button
+                    onClick={handleCelebrate}
+                    className="bg-transparent py-3 w-full text-white font-semibold border border-accent bg-gradient hover:bg-transparent hover:text-white text-lg"
+                  >
+                    Claim
+                  </button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
+      {showConfetti && <Confetti width={width} height={height} />}
       <Tabs defaultValue="Tokens" className="w-full flex flex-col gap-4 h-full">
         <div className="flex flex-col-reverse md:flex-row md:justify-between items-end md:items-center gap-2">
           <TabsList className="rounded-none h-fit p-0 divide-x divide-accent border border-accent grid grid-cols-3 md:max-w-md w-full gap-0 bg-black  text-white data-[state=active]:bg-gradient data-[state=active]:text-black data-[state=active]:font-bold">
@@ -418,12 +453,7 @@ export default function App() {
                       ).toFixed(2)}
                     </div> */}
                     <div className="text-left md:text-right uppercase md:w-32">
-                      {(
-                        <span>
-                          {fixDecimal(token.balance, 6)}
-                        </span>
-                      ) }{" "}
-                      {token.name}
+                      {<span>{fixDecimal(token.balance, 6)}</span>} {token.name}
                     </div>
                     <div className="md:w-36">
                       <div className="grid grid-cols-3 place-items-center gap-1">
