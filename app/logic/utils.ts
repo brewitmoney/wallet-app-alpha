@@ -1,4 +1,4 @@
-import { Hex, PublicClient, createPublicClient, http, toFunctionSelector } from "viem";
+import { Address, Hex, PublicClient, createPublicClient, http, toFunctionSelector } from "viem";
 import { PimlicoPaymasterClient, createPimlicoPaymasterClient } from "permissionless/clients/pimlico";
 import { NetworkUtil } from "./networks";
 import { ethers, formatUnits, zeroPadBytes, zeroPadValue } from "ethers";
@@ -7,6 +7,7 @@ import { buildUseSmartSession, getSpendPolicy } from "./module";
 import { privateKeyToAccount } from "viem/accounts";
 import { getJsonRpcProvider } from "./web3";
 import { computeConfigId, getActionId } from "./smartsessions/smartsessions";
+import { encodeValidationData, OWNABLE_VALIDATOR_ADDRESS } from "@rhinestone/module-sdk";
 
 
   // ERC-20 token ABI (replace with the actual ABI)
@@ -99,7 +100,7 @@ export async function getTokenBalance(tokenAddress: string, account: string, pro
   return formatUnits(balance, decimals);
 }
 
-export async function getSpendableTokenInfo(chainId: string, tokenAddress: Hex, account: Hex, ) {
+export async function getSpendableTokenInfo(chainId: string, tokenAddress: Hex, account: Hex, validator: {address: Address, initData: Hex}) {
   
   // Ethereum provider (you can use Infura or any other provider)
   const provider = await getJsonRpcProvider(chainId);
@@ -120,10 +121,10 @@ export async function getSpendableTokenInfo(chainId: string, tokenAddress: Hex, 
   })
   const actionId = await getActionId({ target: tokenAddress, selector: execCallSelector})
   
-  const sessionPk = "0xdd1db445a79e51f16d08c4e5dc5810c4b5f29882b8610058cfecd425ac293712"
-  const sessionOwner = privateKeyToAccount(sessionPk)
+
   
-  const smartSession = await buildUseSmartSession(chainId, sessionOwner)
+  const smartSession = await buildUseSmartSession(chainId, validator)
+  console.log(smartSession.permissionId)
   const spendPolicy = await getSpendPolicy(chainId, computeConfigId(
     smartSession.permissionId, actionId, account), account, tokenAddress)
 

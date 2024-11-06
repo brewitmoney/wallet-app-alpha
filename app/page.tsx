@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useWeb3Modal } from "@web3modal/wagmi/react";
 import { LogOut, Wallet } from "lucide-react";
 import Truncate from "./utils/truncate";
-import { connectPassKey } from "./logic/passkey";
+import { connectPassKeyAuth } from "./logic/auth";
 import { WebAuthnMode } from "@zerodev/passkey-validator";
 import { storePasskey } from "./utils/storage";
 import { useState } from "react";
@@ -68,7 +68,7 @@ export default function Home() {
                   // Handle the passkey auth here
                   try {
                     setAuthenticating(true);
-                    const passkey = await connectPassKey(
+                    const passkey = await connectPassKeyAuth(
                       "BrewitWallet",
                       WebAuthnMode.Login
                     );
@@ -97,7 +97,7 @@ export default function Home() {
                 onClick={async () => {
                   try {
                     setCreating(true);
-                    const passkey = await connectPassKey(
+                    const passkey = await connectPassKeyAuth(
                       `Brew Wallet ${new Date().toLocaleDateString("en-GB")}`,
                       WebAuthnMode.Register
                     );

@@ -8,10 +8,12 @@ export const storeAccountInfo = (accountInfo: Object) => {
 
 
 export const loadAccountInfo = (): any => {
-
-    const accountInfo = localStorage.getItem('subaccounts');
-    return accountInfo ? JSON.parse(accountInfo) : {};
-}
+    if (typeof window !== 'undefined') {
+      const accountInfo = localStorage.getItem('subaccounts');
+      return accountInfo ? JSON.parse(accountInfo) : {};
+    }
+    return {}; // Return a default value if on the server
+  };
 
 
 export const storePasskey = (passkey: WebAuthnKey) => {

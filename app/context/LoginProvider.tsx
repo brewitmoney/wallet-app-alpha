@@ -9,8 +9,8 @@ import {
   useEnsAvatar,
 } from "wagmi";
 import { usePathname, useRouter } from "next/navigation";
-import { loadPasskey, removePasskey } from "../utils/storage";
-import { connectValidator } from "../logic/passkey";
+import { loadAccountInfo, loadPasskey, removePasskey, storeAccountInfo } from "../utils/storage";
+import { connectPKeyValidator, connectPasskeyValidator } from "../logic/auth";
 import { getSmartAccountClient } from "../logic/permissionless";
 import { normalize } from "viem/ens";
 import useAccountStore from "../store/account/account.store";
@@ -24,6 +24,7 @@ interface LoginContextProps {
   ensname: any;
   ensavatar: any;
   validator: any;
+  pKeyValidator: any;
 }
 // Create the context
 export const LoginContext = createContext<LoginContextProps>({
@@ -35,6 +36,7 @@ export const LoginContext = createContext<LoginContextProps>({
   ensname: undefined,
   ensavatar: undefined,
   validator: undefined,
+  pKeyValidator: undefined,
 });
 
 // Create the provider component
@@ -55,6 +57,8 @@ export const LoginProvider = ({
   const [ensname, setEnsname] = useState<any>(undefined);
   const [ensavatar, setEnsavatar] = useState<any>(undefined);
   const [ validator, setValidator] = useState<any>(undefined);
+  const [ pKeyValidator, setPKeyValidator] = useState<any>(undefined);
+
 
   const { data: _ensname } = useEnsName({ address: accountInfo?.address });
   const { data: _ensavatar } = useEnsAvatar({ name: normalize(_ensname!) });
@@ -64,12 +68,38 @@ export const LoginProvider = ({
     setEnsavatar(_ensavatar);
   }, [_ensavatar, _ensname]);
 
+
+  useEffect(() => {
+    (async () => {
+
+      if (Object.keys(loadAccountInfo()).length === 0) {
+      
+        const initAccountInfo = {
+            selected: 0,
+            address: "",
+            accounts: [
+                { validator: "ownable", validatorInitData: "", salt: "0" },
+                { validator: "passkey", validatorInitData: "", salt: "0" },
+                { validator: "passkey", validatorInitData: "", salt: "0" }
+            ]
+        };
+        storeAccountInfo(initAccountInfo); // Store the initial account info
+    }
+    // ..
+    const _validator = connectPKeyValidator(); 
+    setPKeyValidator(_validator);
+
+
+    })();
+  }, [  chainId ]);
+
+
   useEffect(() => {
 
     (async () => {
       const passkey = loadPasskey();
       if (passkey) {
-        const _validator = await connectValidator(chainId.toString(), passkey);
+        const _validator = await connectPasskeyValidator(chainId.toString(), passkey);
 
         setValidator(_validator);
       }
@@ -81,7 +111,7 @@ export const LoginProvider = ({
     (async () => {
       const passkey = loadPasskey();
       if (passkey) {
-        const _validator = await connectValidator(chainId.toString(), passkey);
+        const _validator = await connectPasskeyValidator(chainId.toString(), passkey);
         const accountClient = await getSmartAccountClient({
           chainId: chainId.toString(),
           validators: [ await getWebAuthnModule(_validator) ],
@@ -122,6 +152,7 @@ export const LoginProvider = ({
         ensname,
         ensavatar,
         validator,
+        pKeyValidator,
       }}
     >
       {children}

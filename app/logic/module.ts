@@ -33,7 +33,9 @@ import { getDetails } from "./jobsAPI";
 import { ENTRYPOINT_ADDRESS_V07, getPackedUserOperation, UserOperation, getUserOperationHash, getAccountNonce } from "permissionless";
 
 
-export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
+// export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
+export const webAuthnModule = "0xef6147F8458Ba496953957Aaf682f2ac40b62783"
+export const passkeySessionValidator = "0xef6147F8458Ba496953957Aaf682f2ac40b62783"
 export const autoDCAExecutor = "0xD7945bbAB1A41a1C3736ED5b2411beA809a2ee2b"
 export const sessionValidator = "0x8D4Bd3f21CfE07FeDe4320F1DA44F5d5d9b9952C"
 export const spendLimitPolicy = "0x6a2246FbC8C61AE6F6f55f99C44A58933Fcf712d"
@@ -52,7 +54,7 @@ export interface Transaction {
 export const getWebAuthnModule = async (validator: any) => {
 
   
-  return { address: validator.address,
+  return { address: webAuthnModule as Address,
      context: await validator.getEnableData()}
 
 }
@@ -106,139 +108,103 @@ export const getAllJobs = async (chainId: string, safeAccount: string): Promise<
   return jobData;
 }
 
-async function  toWebAuthnAccount(chainId: number, walletProvider: any) {
+async function toWebAuthnAccount(
+  chainId: number,
+  signerAccount: any,
+  validatorType: "passkey" | "ownable",
+  transactionType: "normal" | "session",
+  sessionDetails?: {
+    mode: SmartSessionModeType;
+    permissionId: Hex;
+    enableSessionData?: EnableSessionData;
+  }
+) {
+  const client = publicClient(chainId);
 
-  const client =  publicClient(chainId)
+  const signMessage = ({ message }: { message: SignableMessage }): Promise<Hex> => {
+    return signMessageViem(client, { account: signerAccount, message: message });
+  };
 
-    const signMessage = ({ message }: { message: SignableMessage }): Promise<Hex> => {
+  const signUserOperation = async (userOperation: UserOperation<"v0.7">) => {
+    const signature = await signMessage({
+      message: {
+        raw: getUserOperationHash({
+          userOperation,
+          entryPoint: ENTRYPOINT_ADDRESS_V07,
+          chainId: chainId,
+        }),
+      },
+    });
 
-      return  signMessageViem(client, { account: walletProvider, message:  message }) 
-      
-
+    if (transactionType === "normal") {
+      return signature;
     }
 
-    const signUserOperation = async (userOperation: UserOperation<"v0.7">) => {
+    if (!sessionDetails) {
+      throw new Error("Session details are required for session transactions");
+    }
 
-      // let typedDataHash = getBytes(await entryPoint.getUserOpHash(getPackedUserOperation(userOperation)))
-    
-        // TODO: Include to track gas credit user operations
-        // console.log(toHex('BREWITMONEY', { size: 16 }))
-        // userOperation.callData = concat([
-        //   userOperation.callData as `0x{string}`,
-        //   toHex('BREWITMONEY', { size: 16 })
-        // ]).toString() as `0x${string}`
-    
-    
-        return await signMessage({ message:  {  raw: getUserOperationHash({ userOperation, entryPoint: ENTRYPOINT_ADDRESS_V07, chainId: chainId})  }}) 
-       
-        // return await signMessageViem({ message:  { raw: getUserOperationHash({ userOperation, entryPoint: ENTRYPOINT_ADDRESS_V07, chainId: chainId}) }})
-      }
+    return encodeSmartSessionSignature({
+      mode: sessionDetails.mode,
+      permissionId: sessionDetails.permissionId,
+      signature,
+      enableSessionData: sessionDetails.enableSessionData,
+    });
+  };
 
-      const getDummySignature =  () => {
+  const getDummySignature = async () => {
 
-        return walletProvider.getDummySignature();
-      }
+
+    const signature = validatorType == "passkey" ? await signerAccount.getDummySignature() : getOwnableValidatorMockSignature({
+      threshold: 1,
+    });
+
+    if (transactionType === "normal") {
+      return signature;
+    }
+
+    if (!sessionDetails) {
+      throw new Error("Session details are required for session transactions");
+    }
+
+    return encodeSmartSessionSignature({
+      mode: sessionDetails.mode,
+      permissionId: sessionDetails.permissionId,
+      signature,
+      enableSessionData: sessionDetails.enableSessionData,
+    });
+  };
 
   return {
     signMessage,
     signUserOperation,
-    getDummySignature
-  }
-
-  }
-
-
-  async function  toSmartSessionAccount(chainId: number, signerAccount: LocalAccount, mode: SmartSessionModeType, permissionId: Hex, enableSessionData?: EnableSessionData) {
-
-    const client =  publicClient(chainId)
-  
-      const signMessage = ({ message }: { message: SignableMessage }): Promise<Hex> => {
-  
-
-
-        return  signerAccount.signMessage({ message:  message })    
-      }
-
-      
-
-      const signUserOperation = async (userOperation: UserOperation<"v0.7">) => {
-  
-        // let typedDataHash = getBytes(await entryPoint.getUserOpHash(getPackedUserOperation(userOperation)))
-      
-          // TODO: Include to track gas credit user operations
-          // console.log(toHex('BREWITMONEY', { size: 16 }))
-          // userOperation.callData = concat([
-          //   userOperation.callData as `0x{string}`,
-          //   toHex('BREWITMONEY', { size: 16 })
-          // ]).toString() as `0x${string}`
-      
-
-          const account = getAccount({
-            address: "0x73FbCC714A4CD6923A68741697964755cbb64362",
-            type: 'safe',
-          })
-      
-          const signature =  await signMessage({ message:  {  raw: getUserOperationHash({ userOperation, entryPoint: ENTRYPOINT_ADDRESS_V07, chainId: chainId})  }}) 
-
-          const encSig = encodeSmartSessionSignature({ mode, permissionId, signature, enableSessionData })
-          // console.log(decodeSmartSessionSignature({ signature: encSig, account}))
-
-          console.log(enableSessionData)
-
-          return encodeSmartSessionSignature({ mode, permissionId, signature, enableSessionData })
-                
-        }
-
-        const getDummySignature = async () => {
-
-          const signature = getOwnableValidatorMockSignature({
-            threshold: 1,
-          })
-
-
-        const account = getAccount({
-          address: "0x73FbCC714A4CD6923A68741697964755cbb64362",
-          type: 'safe',
-        })
-
-          const encSig = encodeSmartSessionSignature({ mode, permissionId, signature, enableSessionData })
-          // console.log(decodeSmartSessionSignature({ signature: encSig, account}))
-
-          return encodeSmartSessionSignature({ mode, permissionId, signature, enableSessionData })
-
-        }
-  
-    return {
-      signMessage,
-      signUserOperation,
-      getDummySignature
-    }
-  
-    }
-  
-
+    getDummySignature,
+  };
+}
 
 
 
 
 export const sendTransaction = async (chainId: string, calls: Transaction[], walletProvider: any, safeAccount: Hex,
-   type: 'passkey' | 'sessionkey' = 'passkey', sessionDetails?:  {
+  validatorType:  "passkey" | "ownable" =  "passkey" , transactionType: "normal" | "session" = "normal", sessionDetails?:  {
     mode: SmartSessionModeType
     permissionId: Hex
     enableSessionData?: EnableSessionData
   }): Promise<any> => {
 
 
-    const key = BigInt(pad(type == "passkey" ? webAuthnModule : smartSession as Hex, {
+    console.log(validatorType, transactionType, sessionDetails)
+
+    const key = BigInt(pad(transactionType == "normal" ? webAuthnModule : smartSession as Hex, {
         dir: "right",
         size: 24,
       }) || 0
     )
 
 
-    const signingAccount =  type == "passkey" ? await toWebAuthnAccount(parseInt(chainId), walletProvider) 
-    : sessionDetails && await toSmartSessionAccount(parseInt(chainId), walletProvider, sessionDetails.mode, sessionDetails.permissionId, sessionDetails.enableSessionData ) ;
+    const signingAccount = await toWebAuthnAccount(parseInt(chainId), walletProvider, validatorType, transactionType, sessionDetails)
     
+
     if (!signingAccount) {
       throw new Error('Signing account is undefined');
     }
@@ -248,8 +214,8 @@ export const sendTransaction = async (chainId: string, calls: Transaction[], wal
       nonceKey: key,
       address: safeAccount,
       signUserOperation: signingAccount.signUserOperation,
-      getDummySignature: signingAccount.getDummySignature,
-      validators: type === "passkey" ? [await getWebAuthnModule(walletProvider)] : []
+      getDummySignature: signingAccount.getDummySignature
+      // validators: type === "passkey" ? [await getWebAuthnModule(walletProvider)] : []
     });
 
     return await smartAccount.sendTransactions({ transactions: calls, account: smartAccount.account! });
@@ -440,20 +406,20 @@ export const buildEnableAndUseSmartSession = async (chainId: string,  safeAccoun
           client: client,
         })
 
-        const webAuthnAccount = await toWebAuthnAccount(parseInt(chainId), walletProvider);
-        const passkeySig =  await webAuthnAccount.signMessage({
-          message: { raw: sessionDetails.permissionEnableHash },
-        })
+        // const webAuthnAccount = await toWebAuthnAccount(parseInt(chainId), walletProvider);
+        // const passkeySig =  await webAuthnAccount.signMessage({
+        //   message: { raw: sessionDetails.permissionEnableHash },
+        // })
 
-        console.log(encodePacked(['address', 'bytes'], [ webAuthnModule, passkeySig]))
+        // console.log(encodePacked(['address', 'bytes'], [ webAuthnModule, passkeySig]))
         
-        sessionDetails.enableSessionData.enableSession.permissionEnableSig = webAuthnModule + passkeySig.slice(2) as Hex;
+        // sessionDetails.enableSessionData.enableSession.permissionEnableSig = webAuthnModule + passkeySig.slice(2) as Hex;
 
-        console.log(sessionDetails)
+        // console.log(sessionDetails)
 
-        const call = {to: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F" as Address, value: BigInt(0), data: execCallData as Hex}
+        // const call = {to: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F" as Address, value: BigInt(0), data: execCallData as Hex}
 
-        await sendTransaction(chainId, [call], sessionOwner, safeAccount, "sessionkey", sessionDetails)
+        // await sendTransaction(chainId, [call], sessionOwner, safeAccount, "sessionkey", sessionDetails)
 
 
   return {
@@ -464,18 +430,16 @@ export const buildEnableAndUseSmartSession = async (chainId: string,  safeAccoun
 }
 
 
-export const buildUseSmartSession = async (chainId: string, walletProvider: any): Promise<{
+export const buildUseSmartSession = async (chainId: string, validator: {address: Address, initData: Hex}): Promise<{
   mode: SmartSessionModeType
   permissionId: Hex
   enableSessionData?: EnableSessionData
 }> => {
+ 
 
         const session: Session = {
-          sessionValidator: OWNABLE_VALIDATOR_ADDRESS,
-          sessionValidatorInitData: encodeValidationData({
-            threshold: 1,
-            owners: [walletProvider.address],
-          }),
+          sessionValidator: validator.address,
+          sessionValidatorInitData:  validator.initData,
           salt: toHex(toBytes('1', { size: 32 })),
           userOpPolicies: [],
           erc7739Policies: {
@@ -493,18 +457,10 @@ export const buildUseSmartSession = async (chainId: string, walletProvider: any)
 
 
 
-export const buildEnableSmartSession = async (chainId: string,  tokenLimits: {token: Address, amount: string}[]): Promise<Transaction> => {
+export const buildEnableSmartSession = async (chainId: string,  tokenLimits: {token: Address, amount: string}[], validator: {address: Address, initData: Hex}): Promise<Transaction> => {
 
     
-        const sessionPk = "0xdd1db445a79e51f16d08c4e5dc5810c4b5f29882b8610058cfecd425ac293712"
-        const sessionOwner = privateKeyToAccount(sessionPk)
-
         const provider = await getJsonRpcProvider(chainId);
-
-      
-        console.log(tokenLimits)
-
-
         const execCallSelector = toFunctionSelector({
           name: 'transfer',
           type: 'function',
@@ -533,15 +489,10 @@ export const buildEnableSmartSession = async (chainId: string,  tokenLimits: {to
         };
     }));
 
-    console.log(actions)
-
 
         const session: Session = {
-          sessionValidator: OWNABLE_VALIDATOR_ADDRESS,
-          sessionValidatorInitData: encodeValidationData({
-            threshold: 1,
-            owners: [sessionOwner.address],
-          }),
+          sessionValidator: validator.address,
+          sessionValidatorInitData: validator.initData,
           salt: toHex(toBytes('1', { size: 32 })),
           userOpPolicies: [],
           erc7739Policies: {
@@ -551,6 +502,8 @@ export const buildEnableSmartSession = async (chainId: string,  tokenLimits: {to
           actions,
           chainId: BigInt(chainId),
         }
+
+        console.log(await buildUseSmartSession(chainId, {address: validator.address, initData: validator.initData}))
 
         const action = getEnableSessionsAction({ sessions: [session]})
 

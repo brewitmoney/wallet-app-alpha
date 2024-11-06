@@ -39,27 +39,31 @@ import LoadingIndicator from "@/components/ui/loader";
 import { fixDecimal, getSpendableTokenInfo } from "@/app/logic/utils";
 import { ZeroAddress } from "ethers";
 import useAccountStore from "@/app/store/account/account.store";
-import { buildEnableSmartSession, buildInstallModule, buildSmartSessionModule, sendTransaction, smartSession } from "@/app/logic/module";
-import { getJsonRpcProvider } from "@/app/logic/web3";
+import { buildEnableSmartSession, buildInstallModule, buildSmartSessionModule, passkeySessionValidator, sendTransaction, smartSession } from "@/app/logic/module";
+import { connectPKeyValidator, getPKeySessionValidator } from "@/app/logic/auth";
+import { Switch } from "@/components/ui/switch";
 
 const availableAccounts = [
-  { name: "Main Account", icon: "/icons/admin.svg" },
-  { name: "Spend Account", icon: "/icons/send.svg" },
-  { name: "Investment Account", icon: "/icons/investment.svg" },
+  { type: "passkey", name: "Main Account", icon: "/icons/admin.svg" },
+  { type: "ownable", name: "Spend Account (Burner)", icon: "/icons/send.svg" },
+  { type: "passkey", name: "Spend Account (Passkey)", icon: "/icons/send.svg" },
+  { type: "passkey", name: "Investment Account", icon: "/icons/investment.svg" },
 ];
 
 export default function Settings() {
   
-  const accountInfo = loadAccountInfo();
-  const { validator } = useLoginProvider();
-  const { chainId, setChainId } = useAccountStore();
+
+  const { validator, pKeyValidator } = useLoginProvider();
+  const { chainId } = useAccountStore();
+
+  const [ sessionValidator, setSessionValidator ] = useState<any>();
   const [gasChain, setGasChain] = useState<number>(0);
   const [ spendToken, setSpendToken ] = useState<number>(1);
   const [ spendAmount, setSpendAmount ] = useState<string>("0");
   const [tokenDetails, setTokenDetails]: any = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState<number>(
-    accountInfo.selected
-  );
+  const [selectedAccount, setSelectedAccount] = useState<number>(0);
+  const [accountInfo, setAccountInfo] = useState<any>();
+
   const { address, isConnecting, isDisconnected } = useAccount();
 
   function saveGasChain() {
@@ -83,17 +87,22 @@ export default function Settings() {
   useEffect(() => {
 
   (async () => {  
+
+    const accountInfo = loadAccountInfo();
+    setAccountInfo(accountInfo)
     let tokens = getChainById(Number(chainId))?.tokens;
     let updatedTokens = [];
 
+    const sessionValidator = await getPKeySessionValidator(pKeyValidator)
+    setSessionValidator(sessionValidator)
 
+  
     if(address) {
-
     updatedTokens = await Promise.all(
       tokens!.map(async (token) => {
         const spendlimit =
           token.address == ZeroAddress ?
-            {} : (await getSpendableTokenInfo(chainId.toString(), token.address!, address));
+            {} : (await getSpendableTokenInfo(chainId.toString(), token.address!, address, sessionValidator));
 
         return {
           ...token,
@@ -106,7 +115,7 @@ export default function Settings() {
 
   })();
 
-  }, [address, chainId]);
+  }, [address, chainId, validator]);
   
 
   const FaqsData = [
@@ -175,19 +184,84 @@ export default function Settings() {
                     </DialogTrigger>
                     <DialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-black text-white dark:bg-white flex flex-col justify-start items-start gap-4 rounded-none sm:rounded-none max-w-lg w-[90vw] border border-accent">
                       <DialogHeader>
-                        <DialogTitle>Withdraw Funds</DialogTitle>
+                        <DialogTitle>Manage your Sub Accounts</DialogTitle>
                         <DialogDescription>
-                          Withdraw your funds from the vault to your wallet on
-                          desired chain.
+                          Set limits and conditions for different accounts that are available.
                         </DialogDescription>
                         <div className="flex flex-col gap-0 justify-start items-start pt-4">
                           <DialogDescription className="font-semibold text-center w-full text-white">
-                            You are about to withdraw interest bearing token
-                            from the vault to your account
+                            Choose your account type and add spend limits/ actions limits etc.
                           </DialogDescription>
+
 
                           <div className="flex flex-col border border-accent  divide-y divide-accent gap-px">
                               <div className="grid grid-cols-1 md:grid-cols-2 w-full divide-y md:divide-x divide-accent">
+                                <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
+                                  <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
+                                    <div className="text-accent">Spend Limit</div>
+                                    <BadgeDollarSign size={14} />
+                                  </div>
+
+                        <div className="flex flex-row justify-center items-center gap-2">
+                      <Select
+                        defaultValue={accountInfo?.selected?.toString()}
+                        value={accountInfo?.selected?.toString()}
+                        onValueChange={(e) => {
+                          setSelectedAccount(parseInt(e));
+                          accountInfo.selected = parseInt(e);
+                          setAccountInfo(accountInfo);
+                          storeAccountInfo(accountInfo);
+                        }}
+                      >
+                        <SelectTrigger className="w-full text-black h-full py-2.5 focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent border border-accent">
+                          <SelectValue placeholder="Select chain" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableAccounts.map((account, c) => {
+                            return (
+                              <SelectItem value={c.toString()} key={c}>
+                                <div className="flex flex-row justify-start px-0 items-center gap-2">
+                                  <Image
+                                    src={account.icon}
+                                    alt={account.name}
+                                    width="20"
+                                    style={{ color: "orange" }}
+                                    height="20"
+                                  />
+                                  <h4>{account.name}</h4>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>        
+                      </div>
+                       <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
+                                  <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
+                                    <div className="text-accent">Spend Limit</div>
+                                    <BadgeDollarSign size={14} />
+                                  </div>
+                      <div className="flex flex-row justify-center items-center gap-2">
+                      <div className="flex flex-row justify-center items-center gap-2 text-accent mt-2">
+                    <h5>Activate Account? </h5>
+                    <Switch
+                      className="bg-accent rounded-full data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-accent border border-accent"
+                      checked={false}               
+                      onCheckedChange={(checked) => {
+                        console.log(checked);
+                        // setEarnInterest(checked);
+                      }}
+                    />
+                  </div>
+                     
+                              </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col border border-accent  divide-y divide-accent gap-px">
+                              <div className="grid grid-cols-1  w-full divide-y md:divide-x divide-accent">
                                 <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
                                   <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
                                     <div className="text-accent">Spend Limit</div>
@@ -218,7 +292,7 @@ export default function Settings() {
                                           setSpendToken(parseInt(e));
                                         }}
                                       >
-                                        <SelectTrigger className=" w-24 bg-white px-2 py-2 border border-accent text-black flex flex-row gap-2 items-center justify-center text-sm rounded-full focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent">
+                                        <SelectTrigger className=" w-[70%] h-35 bg-white px-2 py-2 border border-accent text-black flex flex-row gap-2 items-center justify-center text-sm rounded-full focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent">
                                           <SelectValue placeholder="From Token" />
                                         </SelectTrigger>
 
@@ -251,17 +325,6 @@ export default function Settings() {
                                     </div>
                                 </div>
                               </div>
-                              <>
-                              <button
-                            className="bg-white border border-accent hover:bg-transparent hover:text-white text-black text-lg m-8 py-2.5 "
-                            onClick={async () => {
-
-
-                                  }}
-                                >
-                                Update Limit
-                              </button>
-                              </>
                             </div>
                           </div>
 
@@ -324,9 +387,10 @@ export default function Settings() {
                                   amount: token.spendlimit.limit,
                                   token: token.address,
                                 }));
-                      
+                            
+                                // const sessionValidator = { address: passkeySessionValidator as Hex, initData: await validator.getEnableData() as Hex}
 
-                                enableTransactions.push(await buildEnableSmartSession(chainId.toString(), SpendLimits ))
+                                enableTransactions.push(await buildEnableSmartSession(chainId.toString(), SpendLimits, sessionValidator ))
                                 await sendTransaction(chainId.toString(), enableTransactions, validator, address) 
 
                               } catch (e) {

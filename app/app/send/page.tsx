@@ -19,7 +19,7 @@ import {
   useAccount,
   useLoginProvider,
 } from "../../context/LoginProvider";
-import { buildUseSmartSession, getSpendPolicy, sendTransaction, Transaction } from "@/app/logic/module";
+import { buildUseSmartSession, getSpendPolicy, passkeySessionValidator, sendTransaction, Transaction } from "@/app/logic/module";
 import { getJsonRpcProvider } from "@/app/logic/web3";
 import { ZeroAddress, formatEther, parseEther, parseUnits } from "ethers";
 import {
@@ -35,6 +35,8 @@ import LoadingIndicator from "@/components/ui/loader";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadAccountInfo } from "@/app/utils/storage";
 import { computeConfigId, getActionId, getPermissionId } from "@/app/logic/smartsessions/smartsessions";
+import { encodeValidationData, OWNABLE_VALIDATOR_ADDRESS } from "@rhinestone/module-sdk";
+import { getPKeySessionValidator } from "@/app/logic/auth";
 
 interface GasChainType {
   name: string;
@@ -49,7 +51,7 @@ export default function Bridge() {
   );
     useState<number>(0);
   const [selectedTokenID, setSelectedTokenID] = useState<number>(0);
-  const accountInfo  = loadAccountInfo()
+  const [ accountInfo, setAccountInfo ] = useState<any>();
 
   const [balance, setBalance] = useState<string>("0");
   const [spendableBalance, setSpendableBalance] = useState<string>("0");
@@ -62,7 +64,9 @@ export default function Bridge() {
 
   const { setChainId, chainId } = useAccountStore();
   const { address } = useAccount();
-  const { validator } = useLoginProvider();
+  const { validator, pKeyValidator } = useLoginProvider();
+  const [ sessionValidator, setSessionValidator ] = useState<any>();
+
 
   async function sendAsset() {
 
@@ -97,21 +101,19 @@ export default function Bridge() {
       }
 
 
-      // if(accountInfo.selected!= 0) {
+      if(accountInfo.selected!= 0) {
+    
+        const useSmartSession = await buildUseSmartSession(chainId.toString(), sessionValidator)
+        await sendTransaction(chainId.toString(), [call], pKeyValidator, address, "ownable", "session", useSmartSession)    
 
-      //   const sessionPk = "0xdd1db445a79e51f16d08c4e5dc5810c4b5f29882b8610058cfecd425ac293712"
-      //   const sessionOwner = privateKeyToAccount(sessionPk)
-      //   const useSmartSession = await buildUseSmartSession(chainId.toString(), sessionOwner)
-      //   await sendTransaction(chainId.toString(), [call], sessionOwner, address, "sessionkey", useSmartSession)    
-
-      // } else {
+      } else {
       const result = await sendTransaction(
         chainId.toString(),
         [call],
         validator,
         address
       );
-    // }
+    }
     } catch (e) {
       console.log("error", e);
     }
@@ -120,6 +122,8 @@ export default function Bridge() {
 
   useEffect(() => {
     (async () => {
+
+      setAccountInfo(loadAccountInfo());
       try {
         const provider = await getJsonRpcProvider(chainId.toString());
         const token = getChainById(chainId)?.tokens[selectedTokenID].address;
@@ -128,7 +132,13 @@ export default function Bridge() {
         } else {
           setBalance(await getTokenBalance(token!, address, provider));
 
-          // setSpendableBalance((await getSpendableTokenInfo(chainId.toString(), token!, address)).balance)
+          // const sessionValidator = { address: passkeySessionValidator as Hex, initData: await validator.getEnableData() as Hex}
+          
+          
+          const sessionValidator = await getPKeySessionValidator(pKeyValidator)
+          setSessionValidator(sessionValidator)  
+      
+          setSpendableBalance((await getSpendableTokenInfo(chainId.toString(), token!, address, sessionValidator)).balance)
 
         }
       }
@@ -150,8 +160,7 @@ export default function Bridge() {
           <div className="flex flex-col gap-2">
             <div className="flex flex-row justify-end items-center text-sm absolute top-1.5 right-6">
               <div className="flex flex-row justify-center items-center gap-1">
-                {/* <div>{`${fixDecimal(balance, 4)} (Spendable: ${fixDecimal(spendableBalance, 4)} ) ${getChainById(chainId)?.tokens[selectedTokenID]?.name}`} </div> */}
-                <div>{`${fixDecimal(balance, 4)} ${getChainById(chainId)?.tokens[selectedTokenID]?.name}`} </div>
+                <div>{`${fixDecimal(balance, 4)} (Spendable: ${fixDecimal(spendableBalance, 4)} ) ${getChainById(chainId)?.tokens[selectedTokenID]?.name}`} </div>
                 <button className="font-bold" onClick={()=> { setTokenValue(balance)}}>Max</button>
               </div>
             </div>
