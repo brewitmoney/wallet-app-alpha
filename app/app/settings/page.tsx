@@ -16,7 +16,13 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "@/components/ui/use-toast";
 import Image from "next/image";
-import { BadgeDollarSign, CopyIcon, Plus } from "lucide-react";
+import {
+  Activity,
+  BadgeDollarSign,
+  CopyIcon,
+  Infinity,
+  User2,
+} from "lucide-react";
 import { useAccount, useLoginProvider } from "../../context/LoginProvider";
 import Truncate from "@/app/utils/truncate";
 import { CopytoClipboard } from "@/app/utils/copyclipboard";
@@ -39,29 +45,44 @@ import LoadingIndicator from "@/components/ui/loader";
 import { fixDecimal, getSpendableTokenInfo } from "@/app/logic/utils";
 import { ZeroAddress } from "ethers";
 import useAccountStore from "@/app/store/account/account.store";
-import { buildEnableSmartSession, buildInstallModule, buildSmartSessionModule, passkeySessionValidator, sendTransaction, smartSession } from "@/app/logic/module";
-import { connectPassKeyAuth, connectPasskeyValidator, connectPKeyValidator, getPassKeySessionValidator, getPKeySessionValidator } from "@/app/logic/auth";
+import {
+  buildEnableSmartSession,
+  buildInstallModule,
+  buildSmartSessionModule,
+  passkeySessionValidator,
+  sendTransaction,
+  smartSession,
+} from "@/app/logic/module";
+import {
+  connectPassKeyAuth,
+  connectPasskeyValidator,
+  connectPKeyValidator,
+  getPassKeySessionValidator,
+  getPKeySessionValidator,
+} from "@/app/logic/auth";
 import { Switch } from "@/components/ui/switch";
 import { WebAuthnMode } from "@zerodev/webauthn-key";
 
 const availableAccounts = [
   { type: "passkey", name: "Main Account", icon: "/icons/admin.svg" },
-  { type: "ownable", name: "Spend Account (Burner)", icon: "/icons/send.svg" },
-  { type: "passkey", name: "Spend Account (Passkey)", icon: "/icons/send.svg" },
-  { type: "passkey", name: "Investment Account", icon: "/icons/investment.svg" },
+  { type: "ownable", name: "Burner Account", icon: "/icons/send.svg" },
+  { type: "passkey", name: "Passkey Account", icon: "/icons/send.svg" },
+  {
+    type: "passkey",
+    name: "Investment Account",
+    icon: "/icons/investment.svg",
+  },
 ];
 
 export default function Settings() {
-  
-
   const { validator, pKeyValidator } = useLoginProvider();
   const { chainId } = useAccountStore();
 
-  const [ sessionValidator, setSessionValidator ] = useState<any>();
+  const [sessionValidator, setSessionValidator] = useState<any>();
   const [gasChain, setGasChain] = useState<number>(0);
-  const [ spendToken, setSpendToken ] = useState<number>(1);
-  const [ spendAmount, setSpendAmount ] = useState<string>("0");
-  const [ updating, setUpdating ] = useState(false);
+  const [spendToken, setSpendToken] = useState<number>(1);
+  const [spendAmount, setSpendAmount] = useState<string>("0");
+  const [updating, setUpdating] = useState(false);
   const [tokenDetails, setTokenDetails]: any = useState([]);
   const [selectedAccount, setSelectedAccount] = useState<number>(1);
   const [accountInfo, setAccountInfo] = useState<any>();
@@ -69,26 +90,25 @@ export default function Settings() {
   const { address, isConnecting, isDisconnected } = useAccount();
 
   async function activateAccount() {
-
     let sessionValidator;
-    if(selectedAccount ==1) {
+    if (selectedAccount == 1) {
       sessionValidator = await getPKeySessionValidator(pKeyValidator);
-    }
-    else {
-
+    } else {
       const passkey = await connectPassKeyAuth(
         `Brew Wallet (Spend Account)${new Date().toLocaleDateString("en-GB")}`,
         WebAuthnMode.Register
       );
-      const validator = await connectPasskeyValidator(chainId.toString(), passkey)
+      const validator = await connectPasskeyValidator(
+        chainId.toString(),
+        passkey
+      );
       sessionValidator = await getPassKeySessionValidator(validator);
-
     }
-    accountInfo.accounts[selectedAccount-1].validatorInitData = sessionValidator.initData;
-    setAccountInfo(accountInfo)
-    storeAccountInfo(accountInfo)
-    setSessionValidator(sessionValidator)
-
+    accountInfo.accounts[selectedAccount - 1].validatorInitData =
+      sessionValidator.initData;
+    setAccountInfo(accountInfo);
+    storeAccountInfo(accountInfo);
+    setSessionValidator(sessionValidator);
 
     toast({
       success: true,
@@ -97,65 +117,52 @@ export default function Settings() {
   }
 
   useEffect(() => {
+    (async () => {
+      const accountInfo = loadAccountInfo();
+      console.log(accountInfo);
+      setAccountInfo(accountInfo);
 
-  (async () => {  
-
-    const accountInfo = loadAccountInfo();
-    console.log(accountInfo)
-    setAccountInfo(accountInfo)
-
-    try {
-    console.log(pKeyValidator)
-    if(accountInfo.accounts[selectedAccount-1].validatorInitData) {
-    const sessionValidator = await getPKeySessionValidator(pKeyValidator)
-    setSessionValidator(sessionValidator)
-    }
-
-}
-catch(e) {
-
-}
-
-
-  })();
-
+      try {
+        console.log(pKeyValidator);
+        if (accountInfo.accounts[selectedAccount - 1].validatorInitData) {
+          const sessionValidator = await getPKeySessionValidator(pKeyValidator);
+          setSessionValidator(sessionValidator);
+        }
+      } catch (e) {}
+    })();
   }, [address, chainId, validator, pKeyValidator]);
 
-
   useEffect(() => {
-
-    (async () => {  
-  
+    (async () => {
       let tokens = getChainById(Number(chainId))?.tokens;
       let updatedTokens = [];
-  
+
       try {
-      if(address) {
-      updatedTokens = await Promise.all(
-        tokens!.map(async (token) => {
-          const spendlimit =
-            token.address == ZeroAddress ?
-              {} : (await getSpendableTokenInfo(chainId.toString(), token.address!, address, sessionValidator));
-  
-          return {
-            ...token,
-            spendlimit, // Add the balance to each token
-          };
-        })
-      );
-      console.log(updatedTokens)
-      setTokenDetails(updatedTokens)
-    }
-  }
-  catch(e) {
-  
-  }
-  
-  
+        if (address) {
+          updatedTokens = await Promise.all(
+            tokens!.map(async (token) => {
+              const spendlimit =
+                token.address == ZeroAddress
+                  ? {}
+                  : await getSpendableTokenInfo(
+                      chainId.toString(),
+                      token.address!,
+                      address,
+                      sessionValidator
+                    );
+
+              return {
+                ...token,
+                spendlimit, // Add the balance to each token
+              };
+            })
+          );
+          console.log(updatedTokens);
+          setTokenDetails(updatedTokens);
+        }
+      } catch (e) {}
     })();
-  
-    }, [address, chainId, sessionValidator]);
-  
+  }, [address, chainId, sessionValidator]);
 
   const FaqsData = [
     {
@@ -221,229 +228,278 @@ catch(e) {
                     >
                       Manage Account
                     </DialogTrigger>
-                    <DialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-black text-white dark:bg-white flex flex-col justify-start items-start gap-4 rounded-none sm:rounded-none max-w-lg w-[90vw] border border-accent">
+                    <DialogContent className="fixed p-4 md:p-6  top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-black text-white dark:bg-white flex flex-col justify-start items-start gap-4 rounded-none sm:rounded-none max-w-lg w-[90vw] border border-accent">
                       <DialogHeader>
                         <DialogTitle>Manage your Sub Accounts</DialogTitle>
                         <DialogDescription>
-                          Set limits and conditions for different accounts that are available.
+                          Set limits and conditions based on your account type.
                         </DialogDescription>
                         <div className="flex flex-col gap-0 justify-start items-start pt-4">
-                          <DialogDescription className="font-semibold text-center w-full text-white">
-                            Choose your account type and add spend limits/ actions limits etc.
-                          </DialogDescription>
-
-
-                          <div className="flex flex-col border border-accent w-full divide-y divide-accent gap-px">
-                              <div className="grid grid-cols-1 md:grid-cols-2 w-full divide-y md:divide-x divide-accent">
-                                <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
-                                  <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
-                                    <div className="text-accent">Spend Limit</div>
-                                    <BadgeDollarSign size={14} />
+                          <div className="flex flex-col border border-accent w-full divide-t divide-y divide-x-0 md:divide-x divide-accent gap-px">
+                            <div className="grid grid-cols-1 md:grid-cols-2 w-full divide-x-0 divide-y md:divide-y-0 md:divide-x divide-accent">
+                              <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
+                                <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
+                                  <div className="text-accent">
+                                    Spend Account
                                   </div>
-
-                        <div className="flex flex-row justify-center items-center gap-2">
-                      <Select
-                        defaultValue={selectedAccount.toString()}
-                        value={selectedAccount.toString()}
-                        onValueChange={async (e) => {
-                          setSelectedAccount(parseInt(e));
-                          let sessionValidator = {};
-                          if(parseInt(e) == 1) {
-                            sessionValidator = await getPKeySessionValidator(pKeyValidator);
-                          }
-                          else if(parseInt(e) == 2) {
-                            sessionValidator = { address: (await getPassKeySessionValidator(validator)).address, initData: accountInfo.accounts[parseInt(e)-1].validatorInitData }                      
-                          }
-                          setSessionValidator(sessionValidator)
-                        }}
-                      >
-                        <SelectTrigger className="w-full text-black h-full py-2.5 focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent border border-accent">
-                          <SelectValue placeholder="Select chain" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableAccounts.map((account, c) => {
-                            if (c!=0) { return (
-                              <SelectItem value={c.toString()} key={c}>
-                                <div className="flex flex-row justify-start px-0 items-center gap-2">
-                                  <Image
-                                    src={account.icon}
-                                    alt={account.name}
-                                    width="20"
-                                    style={{ color: "orange" }}
-                                    height="20"
-                                  />
-                                  <h4>{account.name}</h4>
+                                  <User2 size={14} />
                                 </div>
-                              </SelectItem>
-                            ); }
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>        
-                      </div>
-                       <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
-                                  <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
-                                    <div className="text-accent">Setup Account</div>
-                                    <BadgeDollarSign size={14} />
-                                  </div>
-                      <div className="flex flex-row justify-center items-center gap-2">
-                      <div className="flex flex-row justify-center items-center gap-2 text-accent mt-2">
-                    <h5>Activate Status </h5>
-                    <Switch
-                      className="bg-accent rounded-full data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-accent border border-accent"
-                      checked={accountInfo && accountInfo.accounts && accountInfo.accounts[selectedAccount - 1] ? accountInfo.accounts[selectedAccount - 1].validatorInitData : false}               
-                      onCheckedChange={(checked) => {
-                        activateAccount();
-                        // setEarnInterest(checked);
-                      }}
-                    />
-                  </div>
-                     
-                              </div>
-                              </div>
-                            </div>
-                          </div>
 
-                          <div className="flex flex-col border border-accent  divide-y divide-accent gap-px">
-                              <div className="grid grid-cols-1  w-full divide-y md:divide-x divide-accent">
-                                <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
-                                  <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
-                                    <div className="text-accent">Spend Limit</div>
-                                    <BadgeDollarSign size={14} />
-                                  </div>
-
-                                  <div className="grid grid-cols-2 gap-2 w-full">
-                                    <div className="flex flex-col">
-                                      <input
-                                        type="text"
-                                        value={tokenDetails[spendToken]?.spendlimit?.limit}
-                                        className="bg-transparent focus:outline-none w-full text-white text-4xl"
-                                        onChange={async (e) => {
-                                          const updatedTokenDetails = [...tokenDetails];
-                                          // Update the limit for the specific token
-                                          updatedTokenDetails[spendToken].spendlimit.limit = e.target.value;                                    
-                                          console.log(updatedTokenDetails);
-                                          // Set the updated token details
-                                          setTokenDetails(updatedTokenDetails);
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div className="flex flex-row justify-end items-center gap-2">
-                                      <Select
-                                        value={spendToken.toString()}
-                                        onValueChange={async (e) => {
-                                          setSpendToken(parseInt(e));
-                                        }}
-                                      >
-                                        <SelectTrigger className=" w-[70%] h-35 bg-white px-2 py-2 border border-accent text-black flex flex-row gap-2 items-center justify-center text-sm rounded-full focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent">
-                                          <SelectValue placeholder="From Token" />
-                                        </SelectTrigger>
-
-                                        <SelectContent>
-                                          {tokenDetails.map(
-                                            (token: any, f: number ) =>
-                                              token.address != ZeroAddress && (
-                                                <SelectItem
-                                                  key={f}
-                                                  value={f.toString()}
-                                                >
-                                                  <div className="flex flex-row justify-center items-center gap-2">
-                                                    <Image
-                                                      className="bg-white rounded-full"
-                                                      src={token.icon}
-                                                      alt={token.name}
-                                                      width={25}
-                                                      height={25}
-                                                    />
-                                                    <h3 className="truncate uppercase">
-                                                      {token.name}
-                                                    </h3>
-                                                  </div>
-                                                </SelectItem>
-                                              )
-                                          )}
-                                        </SelectContent>
-                                      </Select>
-                                  
-                                    </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-row justify-between items-center w-full mt-5">
-                            <h4 className="font-semibold">                             
-                              
-                              Current Spend Limits
-                            </h4>
-                          </div>
-
-
-                          { tokenDetails.filter((token: any) => token.spendlimit?.limit > 0).map( ( token: any, key: number ) => 
-                          
-                          <div className="flex flex-row justify-between items-center w-full mt-5" key={key}>
-                        <div className="flex flex-row justify-start items-center gap-2">
-
-                            <Image
-                                      src={
-                                        token.icon!
+                                <div className="flex flex-row justify-center items-center gap-2">
+                                  <Select
+                                    defaultValue={selectedAccount.toString()}
+                                    value={selectedAccount.toString()}
+                                    onValueChange={async (e) => {
+                                      setSelectedAccount(parseInt(e));
+                                      let sessionValidator = {};
+                                      if (parseInt(e) == 1) {
+                                        sessionValidator =
+                                          await getPKeySessionValidator(
+                                            pKeyValidator
+                                          );
+                                      } else if (parseInt(e) == 2) {
+                                        sessionValidator = {
+                                          address: (
+                                            await getPassKeySessionValidator(
+                                              validator
+                                            )
+                                          ).address,
+                                          initData:
+                                            accountInfo.accounts[
+                                              parseInt(e) - 1
+                                            ].validatorInitData,
+                                        };
                                       }
-                                      alt="From Token"
-                                      width={30}
-                                      height={30}
+                                      setSessionValidator(sessionValidator);
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full text-black h-full py-2.5 focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent border border-accent">
+                                      <SelectValue placeholder="Select chain" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {availableAccounts.map((account, c) => {
+                                        if (c != 0) {
+                                          return (
+                                            <SelectItem
+                                              value={c.toString()}
+                                              key={c}
+                                            >
+                                              <div className="flex flex-row justify-start px-0 items-center gap-2 text-left">
+                                                <Image
+                                                  src={account.icon}
+                                                  alt={account.name}
+                                                  width="20"
+                                                  style={{ color: "orange" }}
+                                                  height="20"
+                                                />
+                                                <h4 className="truncate">
+                                                  {account.name}
+                                                </h4>
+                                              </div>
+                                            </SelectItem>
+                                          );
+                                        }
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                              <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
+                                <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
+                                  <div className="text-accent">
+                                    Account Status
+                                  </div>
+                                  <Activity size={14} />
+                                </div>
+                                <div className="flex flex-row justify-center items-center gap-2 h-full">
+                                  <div className="flex flex-row justify-center items-center gap-2 text-accent mt-2">
+                                    <h5>Activate Status </h5>
+                                    <Switch
+                                      className="bg-accent rounded-full data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-accent border border-accent"
+                                      checked={
+                                        accountInfo &&
+                                        accountInfo.accounts &&
+                                        accountInfo.accounts[
+                                          selectedAccount - 1
+                                        ]
+                                          ? accountInfo.accounts[
+                                              selectedAccount - 1
+                                            ].validatorInitData
+                                          : false
+                                      }
+                                      onCheckedChange={(checked) => {
+                                        activateAccount();
+                                        // setEarnInterest(checked);
+                                      }}
                                     />
-                            <h4 className="font-semibold">                             
-                              
-                            { token.fullname! }
-                            </h4>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex flex-row justify-start items-center gap-2">
-                                 
-                                    <div className="font-semibold text-green-500">
-                                      
-                                      { `${token.spendlimit?.limit}` }
-                                    </div>
-                                    <div className="text-red-500">
-                                      
-                                      { `(Spent: ${token.spendlimit?.spent})` }
-                                    </div>
-                                  
-                                  <div className="font-semibold">
-                                      {
-                                  token.name!
-                                      }
-                                    </div>
-                                </div> 
                           </div>
-                        )}
+
+                          <div className="flex flex-col border-x border-b border-accent gap-px">
+                            <div className="grid grid-cols-1  w-full divide-b md:divide-x divide-accent">
+                              <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
+                                <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
+                                  <div className="text-accent">Spend Limit</div>
+                                  <BadgeDollarSign size={14} />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 w-full">
+                                  <div className="flex flex-col">
+                                    <input
+                                      type="text"
+                                      value={
+                                        tokenDetails[spendToken]?.spendlimit
+                                          ?.limit
+                                      }
+                                      className="bg-transparent focus:outline-none w-full text-white text-4xl"
+                                      onChange={async (e) => {
+                                        const updatedTokenDetails = [
+                                          ...tokenDetails,
+                                        ];
+                                        // Update the limit for the specific token
+                                        updatedTokenDetails[
+                                          spendToken
+                                        ].spendlimit.limit = e.target.value;
+                                        console.log(updatedTokenDetails);
+                                        // Set the updated token details
+                                        setTokenDetails(updatedTokenDetails);
+                                      }}
+                                    />
+                                  </div>
+
+                                  <div className="flex flex-row justify-end items-center gap-2">
+                                    <Select
+                                      value={spendToken.toString()}
+                                      onValueChange={async (e) => {
+                                        setSpendToken(parseInt(e));
+                                      }}
+                                    >
+                                      <SelectTrigger className=" w-[70%] h-35 bg-white px-2 py-2 border border-accent text-black flex flex-row gap-2 items-center justify-center text-sm rounded-full focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent">
+                                        <SelectValue placeholder="From Token" />
+                                      </SelectTrigger>
+
+                                      <SelectContent>
+                                        {tokenDetails.map(
+                                          (token: any, f: number) =>
+                                            token.address != ZeroAddress && (
+                                              <SelectItem
+                                                key={f}
+                                                value={f.toString()}
+                                              >
+                                                <div className="flex flex-row justify-center items-center gap-2">
+                                                  <Image
+                                                    className="bg-white rounded-full"
+                                                    src={token.icon}
+                                                    alt={token.name}
+                                                    width={25}
+                                                    height={25}
+                                                  />
+                                                  <h3 className="truncate uppercase">
+                                                    {token.name}
+                                                  </h3>
+                                                </div>
+                                              </SelectItem>
+                                            )
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="px-4 py-3 flex flex-col gap-4 border border-accent w-full mt-4">
+                            <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
+                              <div className="text-accent">Current Limits</div>
+                              <Infinity size={14} />
+                            </div>
+
+                            <div className="flex flex-col divide-y divide-accent">
+                              {tokenDetails
+                                .filter(
+                                  (token: any) => token.spendlimit?.limit > 0
+                                )
+                                .map((token: any, key: number) => (
+                                  <div
+                                    className="flex flex-row justify-between items-center w-full first:pt-0 py-2"
+                                    key={key}
+                                  >
+                                    <div className="flex flex-row justify-start items-center gap-2">
+                                      <Image
+                                        src={token.icon!}
+                                        alt="From Token"
+                                        width={30}
+                                        height={30}
+                                      />
+                                      <h4 className="font-semibold">
+                                        {token.fullname!}
+                                      </h4>
+                                    </div>
+                                    <div className="flex flex-row justify-start items-center gap-2">
+                                      <div className="text-green-800 bg-green-100 px-2 py-1 rounded-full text-xs font-medium">
+                                        {`Limit: ${token.spendlimit?.limit}`}
+                                      </div>
+                                      <div className="text-red-800 bg-red-100 px-2 py-1 rounded-full text-xs font-medium">
+                                        {`Spent: ${token.spendlimit?.spent}`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
                           <button
-                            className="bg-white border border-accent hover:bg-transparent hover:text-white text-black w-full px-6 py-3 text-lg mt-8"
+                            className="bg-transparent py-3 w-full text-white font-semibold border border-accent bg-gradient hover:bg-transparent hover:text-white text-lg mt-4"
                             onClick={async () => {
                               try {
-
-                                setUpdating(true);  
-                                const enableTransactions = await buildSmartSessionModule(chainId.toString(), address)
+                                setUpdating(true);
+                                const enableTransactions =
+                                  await buildSmartSessionModule(
+                                    chainId.toString(),
+                                    address
+                                  );
 
                                 const SpendLimits = tokenDetails
-                                .filter((token: any) => token.spendlimit?.limit > 0)
-                                .map( (token: any) => ({
-                                  amount: token.spendlimit.limit,
-                                  token: token.address,
-                                }));
-                            
+                                  .filter(
+                                    (token: any) => token.spendlimit?.limit > 0
+                                  )
+                                  .map((token: any) => ({
+                                    amount: token.spendlimit.limit,
+                                    token: token.address,
+                                  }));
+
                                 // const sessionValidator = { address: passkeySessionValidator as Hex, initData: await validator.getEnableData() as Hex}
 
-                                enableTransactions.push(await buildEnableSmartSession(chainId.toString(), SpendLimits, sessionValidator ))
-                                await sendTransaction(chainId.toString(), enableTransactions, validator, address) 
-
+                                enableTransactions.push(
+                                  await buildEnableSmartSession(
+                                    chainId.toString(),
+                                    SpendLimits,
+                                    sessionValidator
+                                  )
+                                );
+                                await sendTransaction(
+                                  chainId.toString(),
+                                  enableTransactions,
+                                  validator,
+                                  address
+                                );
                               } catch (e) {
                                 console.log("Failed to withdraw", e);
                               }
-                              setUpdating(false);  
+                              setUpdating(false);
                             }}
                           >
-                            { updating ? <LoadingIndicator text="Updating ..." color="#000"/> : <>Update Account </> }
+                            {updating ? (
+                              <LoadingIndicator
+                                text="Updating ..."
+                                color="#000"
+                              />
+                            ) : (
+                              <>Update Account </>
+                            )}
                           </button>
                         </div>
                       </DialogHeader>
@@ -479,7 +535,7 @@ catch(e) {
                     <h3>Selected Account</h3>
 
                     <div className="flex flex-row justify-center items-center gap-2">
-                    <Select
+                      <Select
                         defaultValue={accountInfo?.selected?.toString()} // Use accountInfo.selected for defaultValue
                         value={accountInfo?.selected?.toString()} // Ensure the Select reflects accountInfo.selected
                         onValueChange={(e) => {
@@ -496,7 +552,7 @@ catch(e) {
                           {availableAccounts.map((account, c) => {
                             return (
                               <SelectItem value={c.toString()} key={c}>
-                                <div className="flex flex-row justify-start px-0 items-center gap-2">
+                                <div className="flex flex-row justify-start px-0 items-center gap-2 text-left">
                                   <Image
                                     src={account.icon}
                                     alt={account.name}
@@ -554,7 +610,7 @@ catch(e) {
                     {gasChainsTokens.map((chain, c) => {
                       return (
                         <SelectItem value={c.toString()} key={c}>
-                          <div className="flex flex-row justify-start px-0 items-center gap-2">
+                          <div className="flex flex-row justify-start px-0 items-center gap-2 text-left">
                             <Image
                               src={chain.icon}
                               alt={chain.name}
@@ -569,9 +625,7 @@ catch(e) {
                   </SelectContent>
                 </Select>
                 <div className="flex flex-row justify-end items-center">
-                  <button
-                    className="bg-black text-white border border-accent hover:bg-white hover:text-black px-4 py-2"
-                  >
+                  <button className="bg-black text-white border border-accent hover:bg-white hover:text-black px-4 py-2">
                     Save
                   </button>
                 </div>
