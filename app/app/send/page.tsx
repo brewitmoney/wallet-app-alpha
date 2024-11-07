@@ -36,7 +36,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { loadAccountInfo } from "@/app/utils/storage";
 import { computeConfigId, getActionId, getPermissionId } from "@/app/logic/smartsessions/smartsessions";
 import { encodeValidationData, OWNABLE_VALIDATOR_ADDRESS } from "@rhinestone/module-sdk";
-import { getPKeySessionValidator } from "@/app/logic/auth";
+import { getPassKeySessionValidator, getPKeySessionValidator } from "@/app/logic/auth";
 
 interface GasChainType {
   name: string;
@@ -101,10 +101,12 @@ export default function Bridge() {
       }
 
 
-      if(accountInfo.selected!= 0) {
+
+      if(accountInfo.selected != 0) {
+        
     
         const useSmartSession = await buildUseSmartSession(chainId.toString(), sessionValidator)
-        await sendTransaction(chainId.toString(), [call], pKeyValidator, address, "ownable", "session", useSmartSession)    
+        await sendTransaction(chainId.toString(), [call], accountInfo.selected == 1 ? pKeyValidator : validator, address, accountInfo.selected == 1 ? "ownable" : "passkey" , "session", useSmartSession)    
 
       } else {
       const result = await sendTransaction(
@@ -132,14 +134,19 @@ export default function Bridge() {
         } else {
           setBalance(await getTokenBalance(token!, address, provider));
 
-          // const sessionValidator = { address: passkeySessionValidator as Hex, initData: await validator.getEnableData() as Hex}
-          
-          
-          const sessionValidator = await getPKeySessionValidator(pKeyValidator)
-          setSessionValidator(sessionValidator)  
+                        
+          let sessionValidator;
+          if(accountInfo.selected ==1 ) {
+            sessionValidator = await getPKeySessionValidator(pKeyValidator);
+          }
+          else if(accountInfo.selected ==2)  {
+            sessionValidator = await getPassKeySessionValidator(validator);
       
-          setSpendableBalance((await getSpendableTokenInfo(chainId.toString(), token!, address, sessionValidator)).balance)
-
+          }
+          if (sessionValidator) {
+            setSessionValidator(sessionValidator);
+            setSpendableBalance((await getSpendableTokenInfo(chainId.toString(), token!, address, sessionValidator)).balance);
+          }
         }
       }
       catch(e) {
@@ -160,7 +167,11 @@ export default function Bridge() {
           <div className="flex flex-col gap-2">
             <div className="flex flex-row justify-end items-center text-sm absolute top-1.5 right-6">
               <div className="flex flex-row justify-center items-center gap-1">
-                <div>{`${fixDecimal(balance, 4)} (Spendable: ${fixDecimal(spendableBalance, 4)} ) ${getChainById(chainId)?.tokens[selectedTokenID]?.name}`} </div>
+                <div>      {`${fixDecimal(balance, 4)} `}
+                {sessionValidator && (
+                    <span>(Spendable: {fixDecimal(spendableBalance, 4)})</span>
+                )}
+                {` ${getChainById(chainId)?.tokens[selectedTokenID]?.name}`} </div>
                 <button className="font-bold" onClick={()=> { setTokenValue(balance)}}>Max</button>
               </div>
             </div>

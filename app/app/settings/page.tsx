@@ -40,8 +40,9 @@ import { fixDecimal, getSpendableTokenInfo } from "@/app/logic/utils";
 import { ZeroAddress } from "ethers";
 import useAccountStore from "@/app/store/account/account.store";
 import { buildEnableSmartSession, buildInstallModule, buildSmartSessionModule, passkeySessionValidator, sendTransaction, smartSession } from "@/app/logic/module";
-import { connectPKeyValidator, getPKeySessionValidator } from "@/app/logic/auth";
+import { connectPassKeyAuth, connectPasskeyValidator, connectPKeyValidator, getPassKeySessionValidator, getPKeySessionValidator } from "@/app/logic/auth";
 import { Switch } from "@/components/ui/switch";
+import { WebAuthnMode } from "@zerodev/webauthn-key";
 
 const availableAccounts = [
   { type: "passkey", name: "Main Account", icon: "/icons/admin.svg" },
@@ -61,27 +62,37 @@ export default function Settings() {
   const [ spendToken, setSpendToken ] = useState<number>(1);
   const [ spendAmount, setSpendAmount ] = useState<string>("0");
   const [tokenDetails, setTokenDetails]: any = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState<number>(0);
+  const [selectedAccount, setSelectedAccount] = useState<number>(1);
   const [accountInfo, setAccountInfo] = useState<any>();
 
   const { address, isConnecting, isDisconnected } = useAccount();
 
-  function saveGasChain() {
-    console.log(gasChain);
-    if (gasChain !== undefined || gasChain !== null) {
-      const data = gasChainsTokens[gasChain];
+  async function activateAccount() {
 
-      localStorage.setItem("gasChain", JSON.stringify(data));
-      toast({
-        success: true,
-        title: "Saved gas chain successfully",
-      });
-    } else {
-      toast({
-        success: false,
-        title: "Please select a gas chain",
-      });
+    let sessionValidator;
+    if(selectedAccount ==1) {
+      sessionValidator = await getPKeySessionValidator(pKeyValidator);
     }
+    else {
+
+      const passkey = await connectPassKeyAuth(
+        `Brew Wallet (Spend Account)${new Date().toLocaleDateString("en-GB")}`,
+        WebAuthnMode.Register
+      );
+      const validator = await connectPasskeyValidator(chainId.toString(), passkey)
+      sessionValidator = await getPassKeySessionValidator(validator);
+
+    }
+    accountInfo.accounts[selectedAccount-1].validatorInitData = sessionValidator.initData;
+    setAccountInfo(accountInfo)
+    storeAccountInfo(accountInfo)
+    setSessionValidator(sessionValidator)
+
+
+    toast({
+      success: true,
+      title: "Subaccount activated!",
+    });
   }
 
   useEffect(() => {
@@ -89,33 +100,60 @@ export default function Settings() {
   (async () => {  
 
     const accountInfo = loadAccountInfo();
+    console.log(accountInfo)
     setAccountInfo(accountInfo)
-    let tokens = getChainById(Number(chainId))?.tokens;
-    let updatedTokens = [];
 
+    try {
+    console.log(pKeyValidator)
+    if(accountInfo.accounts[selectedAccount-1].validatorInitData) {
     const sessionValidator = await getPKeySessionValidator(pKeyValidator)
     setSessionValidator(sessionValidator)
+    }
 
-  
-    if(address) {
-    updatedTokens = await Promise.all(
-      tokens!.map(async (token) => {
-        const spendlimit =
-          token.address == ZeroAddress ?
-            {} : (await getSpendableTokenInfo(chainId.toString(), token.address!, address, sessionValidator));
+}
+catch(e) {
 
-        return {
-          ...token,
-          spendlimit, // Add the balance to each token
-        };
-      })
-    );
-    setTokenDetails(updatedTokens)
-  }
+}
+
 
   })();
 
-  }, [address, chainId, validator]);
+  }, [address, chainId, validator, pKeyValidator]);
+
+
+  useEffect(() => {
+
+    (async () => {  
+  
+      let tokens = getChainById(Number(chainId))?.tokens;
+      let updatedTokens = [];
+  
+      try {
+      if(address) {
+      updatedTokens = await Promise.all(
+        tokens!.map(async (token) => {
+          const spendlimit =
+            token.address == ZeroAddress ?
+              {} : (await getSpendableTokenInfo(chainId.toString(), token.address!, address, sessionValidator));
+  
+          return {
+            ...token,
+            spendlimit, // Add the balance to each token
+          };
+        })
+      );
+      console.log(updatedTokens)
+      setTokenDetails(updatedTokens)
+    }
+  }
+  catch(e) {
+  
+  }
+  
+  
+    })();
+  
+    }, [address, chainId, sessionValidator]);
   
 
   const FaqsData = [
@@ -194,7 +232,7 @@ export default function Settings() {
                           </DialogDescription>
 
 
-                          <div className="flex flex-col border border-accent  divide-y divide-accent gap-px">
+                          <div className="flex flex-col border border-accent w-full divide-y divide-accent gap-px">
                               <div className="grid grid-cols-1 md:grid-cols-2 w-full divide-y md:divide-x divide-accent">
                                 <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
                                   <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
@@ -204,13 +242,18 @@ export default function Settings() {
 
                         <div className="flex flex-row justify-center items-center gap-2">
                       <Select
-                        defaultValue={accountInfo?.selected?.toString()}
-                        value={accountInfo?.selected?.toString()}
-                        onValueChange={(e) => {
+                        defaultValue={selectedAccount.toString()}
+                        value={selectedAccount.toString()}
+                        onValueChange={async (e) => {
                           setSelectedAccount(parseInt(e));
-                          accountInfo.selected = parseInt(e);
-                          setAccountInfo(accountInfo);
-                          storeAccountInfo(accountInfo);
+                          let sessionValidator = {};
+                          if(parseInt(e) == 1) {
+                            sessionValidator = await getPKeySessionValidator(pKeyValidator);
+                          }
+                          else if(parseInt(e) == 2) {
+                            sessionValidator = { address: (await getPassKeySessionValidator(validator)).address, initData: accountInfo.accounts[parseInt(e)-1].validatorInitData }                      
+                          }
+                          setSessionValidator(sessionValidator)
                         }}
                       >
                         <SelectTrigger className="w-full text-black h-full py-2.5 focus:outline-none focus:ring-offset-0 focus:ring-0 focus:ring-accent border border-accent">
@@ -218,7 +261,7 @@ export default function Settings() {
                         </SelectTrigger>
                         <SelectContent>
                           {availableAccounts.map((account, c) => {
-                            return (
+                            if (c!=0) { return (
                               <SelectItem value={c.toString()} key={c}>
                                 <div className="flex flex-row justify-start px-0 items-center gap-2">
                                   <Image
@@ -231,7 +274,7 @@ export default function Settings() {
                                   <h4>{account.name}</h4>
                                 </div>
                               </SelectItem>
-                            );
+                            ); }
                           })}
                         </SelectContent>
                       </Select>
@@ -239,17 +282,17 @@ export default function Settings() {
                       </div>
                        <div className=" px-4 py-3 flex  flex-col justify-start items-start gap-2 w-full text-base">
                                   <div className="flex flex-row justify-start items-center gap-1 text-accent text-sm">
-                                    <div className="text-accent">Spend Limit</div>
+                                    <div className="text-accent">Setup Account</div>
                                     <BadgeDollarSign size={14} />
                                   </div>
                       <div className="flex flex-row justify-center items-center gap-2">
                       <div className="flex flex-row justify-center items-center gap-2 text-accent mt-2">
-                    <h5>Activate Account? </h5>
+                    <h5>Activate Status </h5>
                     <Switch
                       className="bg-accent rounded-full data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-accent border border-accent"
-                      checked={false}               
+                      checked={accountInfo && accountInfo.accounts && accountInfo.accounts[selectedAccount - 1] ? accountInfo.accounts[selectedAccount - 1].validatorInitData : false}               
                       onCheckedChange={(checked) => {
-                        console.log(checked);
+                        activateAccount();
                         // setEarnInterest(checked);
                       }}
                     />
@@ -434,12 +477,13 @@ export default function Settings() {
                     <h3>Selected Account</h3>
 
                     <div className="flex flex-row justify-center items-center gap-2">
-                      <Select
-                        defaultValue={selectedAccount.toString()}
-                        value={selectedAccount.toString()}
+                    <Select
+                        defaultValue={accountInfo?.selected?.toString()} // Use accountInfo.selected for defaultValue
+                        value={accountInfo?.selected?.toString()} // Ensure the Select reflects accountInfo.selected
                         onValueChange={(e) => {
-                          setSelectedAccount(parseInt(e));
-                          accountInfo.selected = parseInt(e);
+                          const newSelectedAccount = parseInt(e);
+                          accountInfo.selected = newSelectedAccount; // Update accountInfo.selected
+                          setAccountInfo({ ...accountInfo }); // Trigger re-render by creating a new object
                           storeAccountInfo(accountInfo);
                         }}
                       >
@@ -524,7 +568,6 @@ export default function Settings() {
                 </Select>
                 <div className="flex flex-row justify-end items-center">
                   <button
-                    onClick={() => saveGasChain()}
                     className="bg-black text-white border border-accent hover:bg-white hover:text-black px-4 py-2"
                   >
                     Save

@@ -72,6 +72,19 @@ export const networks = {
     api: `https://api-goerli.etherscan.io/api?apikey=${ETHERSCAN_API_KEY}`,
     easExplorer: "",
   },
+
+
+  basesandbox: {
+    name: 'Base',
+    type: 'fork',
+    chainId: 11237,
+    url: `https://rpc.dev.buildbear.io/implicit-siryn-1bdc1bb0`,
+    bundler: `https://rpc.dev.buildbear.io/implicit-siryn-1bdc1bb0`,
+    blockExplorer: "https://basescan.org",
+    safeService: "https://safe-transaction-base.safe.global",
+    api: `https://api-goerli.etherscan.io/api?apikey=${ETHERSCAN_API_KEY}`,
+    easExplorer: "",
+  },
   basefork: {    
 
     name: 'Base Fork',

@@ -71,20 +71,6 @@ export const LoginProvider = ({
 
   useEffect(() => {
     (async () => {
-
-      if (Object.keys(loadAccountInfo()).length === 0) {
-      
-        const initAccountInfo = {
-            selected: 0,
-            address: "",
-            accounts: [
-                { validator: "ownable", validatorInitData: "", salt: "0" },
-                { validator: "passkey", validatorInitData: "", salt: "0" },
-                { validator: "passkey", validatorInitData: "", salt: "0" }
-            ]
-        };
-        storeAccountInfo(initAccountInfo); // Store the initial account info
-    }
     // ..
     const _validator = connectPKeyValidator(); 
     setPKeyValidator(_validator);
@@ -118,9 +104,32 @@ export const LoginProvider = ({
         });
         if (!accountInfo?.address) {
           setValidator(_validator);
-          setAccountInfo(accountClient.account);
           setWalletInfo({ name: "passkey", icon: "/icons/safe.svg" });
           setWalletStatus("ready");
+          if (Object.keys(loadAccountInfo()).length === 0) {
+      
+            const initAccountInfo = {
+                selected: 0,
+                address: accountClient.account,
+                accounts: [
+                    { validator: "ownable", validatorInitData: "", salt: "0" },
+                    { validator: "passkey", validatorInitData: "", salt: "0" },
+                    { validator: "passkey", validatorInitData: "", salt: "0" }
+                ]
+            };
+            storeAccountInfo(initAccountInfo); // Store the initial account info
+        }
+        const subAccountInfo = loadAccountInfo()
+        if(subAccountInfo.accounts[1].validatorInitData == await _validator.getEnableData()) { 
+          setAccountInfo(subAccountInfo.address);
+          subAccountInfo.selected = 2
+
+        }
+        else{
+          setAccountInfo(accountClient.account);
+          subAccountInfo.selected = 0
+        }
+        storeAccountInfo(subAccountInfo)
         }
       } else {
         setWalletStatus("notready");

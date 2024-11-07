@@ -31,12 +31,14 @@ import {
 } from "@/components/ui/select";
 import { gasChainsTokens } from "@/app/utils/tokens";
 import useAccountStore from "@/app/store/account/account.store";
+import { loadAccountInfo } from "@/app/utils/storage";
 
 export default function Topbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
+  const accountInfo = loadAccountInfo()
   const { address, isConnecting, isDisconnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { walletInfo } = useWalletInfo();
@@ -136,6 +138,7 @@ export default function Topbar() {
                 <WalletButton
                   walletInfo={walletInfo}
                   address={address}
+                  isSubaccount={accountInfo.selected!=0}
                   disconnect={() => {
                     disconnect();
                     setWalletInfo(undefined);
@@ -188,6 +191,7 @@ export default function Topbar() {
           <WalletButton
             walletInfo={walletInfo}
             address={address}
+            isSubaccount={accountInfo.selected!=0}
             disconnect={() => {
               disconnect();
               setWalletInfo(undefined);
@@ -209,7 +213,7 @@ const WalletButton = (props: any) => {
         width={25}
         height={25}
       />
-      <p>{Truncate(props.address, 12, "...")}</p>
+      <p>{Truncate(props.address, 12, "...")}</p>  <p className="text-yellow-500">{props.isSubaccount && "(Sub Account)"}</p>
 
       <button
         onClick={() => {

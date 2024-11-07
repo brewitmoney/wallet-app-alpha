@@ -1,4 +1,5 @@
 import { WebAuthnKey  } from "@zerodev/webauthn-key";
+import { Hex } from "viem";
 
 
 export const storeAccountInfo = (accountInfo: Object) => {
@@ -33,4 +34,20 @@ export const loadPasskey = (): any => {
 
     const accountInfo = localStorage.getItem('passkey');
     return accountInfo ? JSON.parse(accountInfo) : undefined;
+}
+
+export const storePkey = (key: Hex) => {
+    
+  localStorage.setItem('pkey', key);
+}
+
+export const removePkey = () => {
+  
+  localStorage.removeItem('pkey');
+}
+
+
+export const loadPkey = (): any => {
+
+  return localStorage.getItem('pkey');
 }

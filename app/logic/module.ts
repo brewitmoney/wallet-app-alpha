@@ -34,11 +34,11 @@ import { ENTRYPOINT_ADDRESS_V07, getPackedUserOperation, UserOperation, getUserO
 
 
 // export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
-export const webAuthnModule = "0xef6147F8458Ba496953957Aaf682f2ac40b62783"
-export const passkeySessionValidator = "0xef6147F8458Ba496953957Aaf682f2ac40b62783"
+export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
+export const passkeySessionValidator = "0x6D5e6f712532c9241b87D1F0972344BB79125561"
 export const autoDCAExecutor = "0xD7945bbAB1A41a1C3736ED5b2411beA809a2ee2b"
 export const sessionValidator = "0x8D4Bd3f21CfE07FeDe4320F1DA44F5d5d9b9952C"
-export const spendLimitPolicy = "0x6a2246FbC8C61AE6F6f55f99C44A58933Fcf712d"
+export const spendLimitPolicy = "0x3D1924f657BcB24457285c762aBcf167f2cf7589"
 export const smartSession = SMART_SESSIONS_ADDRESS
 import { getChainId, signMessage as signMessageViem } from "viem/actions"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -214,8 +214,8 @@ export const sendTransaction = async (chainId: string, calls: Transaction[], wal
       nonceKey: key,
       address: safeAccount,
       signUserOperation: signingAccount.signUserOperation,
-      getDummySignature: signingAccount.getDummySignature
-      // validators: type === "passkey" ? [await getWebAuthnModule(walletProvider)] : []
+      getDummySignature: signingAccount.getDummySignature,
+      validators: transactionType === "normal" ? [await getWebAuthnModule(walletProvider)] : []
     });
 
     return await smartAccount.sendTransactions({ transactions: calls, account: smartAccount.account! });

@@ -5,8 +5,10 @@ import { publicClient } from "./utils";
 import { LocalAccount, privateKeyToAccount } from "viem/accounts";
 import { encodeValidationData, OWNABLE_VALIDATOR_ADDRESS } from "@rhinestone/module-sdk";
 import { passkeySessionValidator } from "./module";
-import { Hex } from "viem";
+import { Hex} from "viem";
 import { ENTRYPOINT_ADDRESS_V07_TYPE } from "permissionless/types";
+import { randomBytes } from "crypto";
+import { loadPkey, storePkey } from "../utils/storage";
 
 
 
@@ -37,7 +39,12 @@ return await toWebAuthnKey({
 
 export function connectPKeyValidator() {
 
-  const sessionPk = "0xdd1db445a79e51f16d08c4e5dc5810c4b5f29882b8610058cfecd425ac293712"
+  let sessionPk = loadPkey()
+  if(!sessionPk) {
+     sessionPk = '0x' + randomBytes(32).toString('hex') as Hex;
+     console.log(sessionPk)
+     storePkey(sessionPk);
+  }
   return privateKeyToAccount(sessionPk)
 
 }
