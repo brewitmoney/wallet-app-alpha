@@ -61,6 +61,7 @@ export default function Settings() {
   const [gasChain, setGasChain] = useState<number>(0);
   const [ spendToken, setSpendToken ] = useState<number>(1);
   const [ spendAmount, setSpendAmount ] = useState<string>("0");
+  const [ updating, setUpdating ] = useState(false);
   const [tokenDetails, setTokenDetails]: any = useState([]);
   const [selectedAccount, setSelectedAccount] = useState<number>(1);
   const [accountInfo, setAccountInfo] = useState<any>();
@@ -421,7 +422,7 @@ catch(e) {
                             onClick={async () => {
                               try {
 
-
+                                setUpdating(true);  
                                 const enableTransactions = await buildSmartSessionModule(chainId.toString(), address)
 
                                 const SpendLimits = tokenDetails
@@ -439,9 +440,10 @@ catch(e) {
                               } catch (e) {
                                 console.log("Failed to withdraw", e);
                               }
+                              setUpdating(false);  
                             }}
                           >
-                            Update Account
+                            { updating ? <LoadingIndicator text="Updating ..." color="#000"/> : <>Update Account </> }
                           </button>
                         </div>
                       </DialogHeader>
