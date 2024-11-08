@@ -37,6 +37,7 @@ import { loadAccountInfo } from "@/app/utils/storage";
 import { computeConfigId, getActionId, getPermissionId } from "@/app/logic/smartsessions/smartsessions";
 import { encodeValidationData, OWNABLE_VALIDATOR_ADDRESS } from "@rhinestone/module-sdk";
 import { getPassKeySessionValidator, getPKeySessionValidator } from "@/app/logic/auth";
+import { toast } from "@/components/ui/use-toast";
 
 interface GasChainType {
   name: string;
@@ -104,7 +105,7 @@ export default function Bridge() {
 
       if(accountInfo.selected != 0) {
         
-    
+      
         const useSmartSession = await buildUseSmartSession(chainId.toString(), sessionValidator)
         await sendTransaction(chainId.toString(), [call], accountInfo.selected == 1 ? pKeyValidator : validator, address, accountInfo.selected == 1 ? "ownable" : "passkey" , "session", useSmartSession)    
 
@@ -116,7 +117,19 @@ export default function Bridge() {
         address
       );
     }
+
+    toast({
+      success: true,
+      title: "Hooray! Transfer Successful! 🎉", // Fun title with emojis
+      description: "Your assets have zoomed away! 🚀💰 Enjoy your new treasures!" 
+    });
     } catch (e) {
+      toast({
+        success: false,
+        title: "Oops! Transfer Failed!",
+        description: "Looks like you don't have the magic permission or enough assets to make this transfer happen. Try again!"
+
+      });
       console.log("error", e);
     }
     setSending(false);
@@ -165,17 +178,19 @@ export default function Bridge() {
         </div>
         <div className="flex flex-col gap-4 px-4 md:px-6 pb-6 pt-7 relative">
           <div className="flex flex-col gap-2">
-            <div className="flex flex-row justify-end items-center text-sm absolute top-1.5 right-6">
+            <div className="flex flex-row justify-end items-center text-sm absolute top-1.5 right-6 mb-2">
               <div className="flex flex-row justify-center items-center gap-1">
                 <div>      {`${fixDecimal(balance, 4)} `}
-                {sessionValidator && (
-                    <span>(Spendable: {fixDecimal(spendableBalance, 4)})</span>
-                )}
                 {` ${getChainById(chainId)?.tokens[selectedTokenID]?.name}`} </div>
-                <button className="font-bold" onClick={()=> { setTokenValue(balance)}}>Max</button>
+                {sessionValidator && (
+                    <span className="text-green-800 bg-green-100 px-2 py-1 rounded-full text-xs font-medium">
+                               Spendable:    {fixDecimal(spendableBalance, 4)}
+                      </span>
+                )}
+                <button className="font-bold" onClick={()=> { setTokenValue(spendableBalance)}}>Max</button>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3">
+            <div className="grid grid-cols-2 md:grid-cols-3  mt-2">
               <div className="flex flex-row col-span-2 divide-x divide-accent border-r border-accent">
                 <Select
                   value={chainId.toString()}

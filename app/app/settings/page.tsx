@@ -22,6 +22,7 @@ import {
   CopyIcon,
   Infinity,
   User2,
+  Wallet2,
 } from "lucide-react";
 import { useAccount, useLoginProvider } from "../../context/LoginProvider";
 import Truncate from "@/app/utils/truncate";
@@ -42,8 +43,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import LoadingIndicator from "@/components/ui/loader";
-import { fixDecimal, getSpendableTokenInfo } from "@/app/logic/utils";
-import { ZeroAddress } from "ethers";
+import { fixDecimal, getSpendableTokenInfo, getTokenBalance } from "@/app/logic/utils";
+import { formatEther, ZeroAddress } from "ethers";
 import useAccountStore from "@/app/store/account/account.store";
 import {
   buildEnableSmartSession,
@@ -62,6 +63,7 @@ import {
 } from "@/app/logic/auth";
 import { Switch } from "@/components/ui/switch";
 import { WebAuthnMode } from "@zerodev/webauthn-key";
+import { getJsonRpcProvider } from "@/app/logic/web3";
 
 const availableAccounts = [
   { type: "passkey", name: "Main Account", icon: "/icons/admin.svg" },
@@ -81,7 +83,7 @@ export default function Settings() {
   const [sessionValidator, setSessionValidator] = useState<any>();
   const [gasChain, setGasChain] = useState<number>(0);
   const [spendToken, setSpendToken] = useState<number>(1);
-  const [spendAmount, setSpendAmount] = useState<string>("0");
+  const [balance, setBalance] = useState<string>("0");
   const [updating, setUpdating] = useState(false);
   const [tokenDetails, setTokenDetails]: any = useState([]);
   const [selectedAccount, setSelectedAccount] = useState<number>(1);
@@ -163,6 +165,21 @@ export default function Settings() {
       } catch (e) {}
     })();
   }, [address, chainId, sessionValidator]);
+
+  useEffect(() => {
+    (async () => {  
+      if(address) {
+      const provider = await getJsonRpcProvider(chainId.toString());
+      const token = getChainById(Number(chainId))?.tokens[spendToken].address;
+      if (token == ZeroAddress) {
+        setBalance(formatEther(await provider.getBalance(address)));
+      } else {
+        setBalance(await getTokenBalance(token!, address, provider));
+      }
+    }
+    })();
+  }, [chainId, address, spendToken]);
+
 
   const FaqsData = [
     {
@@ -368,6 +385,10 @@ export default function Settings() {
                                         setTokenDetails(updatedTokenDetails);
                                       }}
                                     />
+                                        <div className="flex flex-row items-center gap-2 text-accent">
+                                          <Wallet2 size={16} />
+                                          <h5>Main Balance: {Number(balance).toFixed(4)}</h5>
+                                        </div>
                                   </div>
 
                                   <div className="flex flex-row justify-end items-center gap-2">
@@ -451,9 +472,10 @@ export default function Settings() {
                                 ))}
                             </div>
                           </div>
+
                           <button
-                            className="bg-transparent py-3 w-full text-white font-semibold border border-accent bg-gradient hover:bg-transparent hover:text-white text-lg mt-4"
-                            onClick={async () => {
+                              className={`bg-transparent py-3 w-full text-white font-semibold border border-accent ${updating ? '' : 'bg-gradient hover:bg-transparent hover:text-white'} text-lg  mt-4`}
+                                onClick={async () => {
                               try {
                                 setUpdating(true);
                                 const enableTransactions =
@@ -471,8 +493,6 @@ export default function Settings() {
                                     token: token.address,
                                   }));
 
-                                // const sessionValidator = { address: passkeySessionValidator as Hex, initData: await validator.getEnableData() as Hex}
-
                                 enableTransactions.push(
                                   await buildEnableSmartSession(
                                     chainId.toString(),
@@ -486,8 +506,20 @@ export default function Settings() {
                                   validator,
                                   address
                                 );
+
+                                toast({
+                                  success: true,
+                                  title: "Subaccount Limit Updated! 🎉", // Updated title for subaccount limit
+                                  description: "The limits for your subaccount have been successfully updated! 🚀💰" // 
+                                });
+
                               } catch (e) {
                                 console.log("Failed to withdraw", e);
+                                toast({
+                                  success: false, // Indicate failure
+                                  title: "Failed to Update Subaccount Limit", // Updated title for failure
+                                  description: "There was an error updating the limits for your subaccount. Please try again later." // Updated description for failure
+                                });
                               }
                               setUpdating(false);
                             }}
@@ -495,7 +527,6 @@ export default function Settings() {
                             {updating ? (
                               <LoadingIndicator
                                 text="Updating ..."
-                                color="#000"
                               />
                             ) : (
                               <>Update Account </>

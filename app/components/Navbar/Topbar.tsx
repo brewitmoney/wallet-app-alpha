@@ -213,7 +213,11 @@ const WalletButton = (props: any) => {
         width={25}
         height={25}
       />
-      <p>{Truncate(props.address, 12, "...")}</p>  <p className="text-yellow-500">{props.isSubaccount && "(Sub Account)"}</p>
+      <p>{Truncate(props.address, 12, "...")}</p>  {
+      props.address && props.isSubaccount ?
+      <div className="text-red-800 bg-yellow-200 px-2 py-1 rounded-full text-xs font-medium">
+       Sub Account
+    </div> : null }
 
       <button
         onClick={() => {
