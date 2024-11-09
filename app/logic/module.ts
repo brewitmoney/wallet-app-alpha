@@ -36,7 +36,7 @@ import { ENTRYPOINT_ADDRESS_V07, getPackedUserOperation, UserOperation, getUserO
 // export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
 export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
 export const passkeySessionValidator = "0x6D5e6f712532c9241b87D1F0972344BB79125561"
-export const autoDCAExecutor = "0xD7945bbAB1A41a1C3736ED5b2411beA809a2ee2b"
+export const autoDCAExecutor = "0xA0276A0847cf114DD16c435510DAA67bC70Ee344"
 export const sessionValidator = "0x8D4Bd3f21CfE07FeDe4320F1DA44F5d5d9b9952C"
 export const spendLimitPolicy = "0x3D1924f657BcB24457285c762aBcf167f2cf7589"
 export const smartSession = SMART_SESSIONS_ADDRESS
