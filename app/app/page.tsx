@@ -225,12 +225,12 @@ export default function App() {
                 </div>
               </div>
             </div>
-            <button
+            {/* <button
               onClick={() => setOpenClaim(true)}
               className="flex flex-row justify-center items-center gap-2 bg-gradient text-black px-6 py-2 font-bold rounded-full"
             >
               Claim Badge
-            </button>
+            </button> */}
             <Dialog open={openClaim} onOpenChange={setOpenClaim}>
               <DialogContent className="bg-black text-white dark:bg-white flex flex-col justify-start items-start gap-4 rounded-none sm:rounded-none max-w-lg mx-auto border border-accent">
                 <DialogHeader>

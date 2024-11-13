@@ -35,10 +35,10 @@ import { ENTRYPOINT_ADDRESS_V07, getPackedUserOperation, UserOperation, getUserO
 
 // export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
 export const webAuthnModule = "0xD990393C670dCcE8b4d8F858FB98c9912dBFAa06"
-export const passkeySessionValidator = "0x6D5e6f712532c9241b87D1F0972344BB79125561"
+export const passkeySessionValidator = "0xA66C14045a68232B0d3aC75566C449A9167F8583"
 export const autoDCAExecutor = "0xA0276A0847cf114DD16c435510DAA67bC70Ee344"
 export const sessionValidator = "0x8D4Bd3f21CfE07FeDe4320F1DA44F5d5d9b9952C"
-export const spendLimitPolicy = "0x3D1924f657BcB24457285c762aBcf167f2cf7589"
+export const spendLimitPolicy = "0xED0FbC27Ca0D7e48F4aB40b1F88f74B7F6118884"
 export const smartSession = SMART_SESSIONS_ADDRESS
 import { getChainId, signMessage as signMessageViem } from "viem/actions"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";

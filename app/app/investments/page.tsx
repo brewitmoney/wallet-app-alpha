@@ -97,7 +97,7 @@ export default function Investments() {
   const [fromToken, setFromToken] = useState<number>(1);
   const [balance, setBalance] = useState<string>("0");
   const [layerZeroHash, setLayerZeroHash] = useState<string>("");
-  const [targetToken, setTargetToken] = useState<number>(1);
+  const [targetToken, setTargetToken] = useState<number>(2);
   const [targetTokenValue, setTargetTokenValue] = useState<string>("");
   const [selectedVault, setSelectedVault] = useState<any>();
   const [frequency, setFrequency] = useState<number>(0);

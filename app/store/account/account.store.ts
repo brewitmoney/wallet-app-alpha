@@ -11,7 +11,7 @@ const useAccountStore = create<AccountStoreState>((set) => ({
   accountDetails: {},
   chainId: typeof window !== 'undefined' && localStorage.getItem('chainId')
     ? parseInt(localStorage.getItem('chainId')!)
-    : 11237, // Default value when localStorage is not available
+    : 11235, // Default value when localStorage is not available
 
   setChainId: (id: number) => {
     if (typeof window !== 'undefined') {

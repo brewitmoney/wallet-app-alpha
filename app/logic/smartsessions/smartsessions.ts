@@ -25,7 +25,7 @@ import {
   import { Account, AccountType, Execution } from '@rhinestone/module-sdk'
 
 
-  export const SMART_SESSIONS_ADDRESS = "0xF03412895502735c122032B6486710CF92b2E8d6"
+  export const SMART_SESSIONS_ADDRESS = "0xF83FB5ae5026ce83982919d447A255421437434a"
   
   export const getPermissionId = ({ session }: { session: Session }): Hex => {
     return keccak256(
